@@ -1,0 +1,2292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MERCH.ARCHIVE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --ink:     #04060f;
+      --deep:    #070b18;
+      --navy:    #0b1022;
+      --panel:   #0f1428;
+      --card:    #111830;
+      --border:  #1a2240;
+      --mid:     #263060;
+      --muted:   #4a5880;
+      --soft:    #8a9ac0;
+      --white:   #e8eeff;
+      --off:     #c0ccee;
+
+      /* ONE signature accent — electric blue */
+      --blue:    #3d7fff;
+      --blue2:   #5b9aff;
+      --glow:    rgba(61,127,255,.18);
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--ink);
+      color: var(--white);
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* subtle noise */
+    body::before {
+      content:'';
+      position:fixed; inset:0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events:none; z-index:9997; opacity:.4;
+    }
+
+    /* ── TICKER ── */
+    .ticker-wrap {
+      background: var(--blue);
+      overflow: hidden;
+      padding: 7px 0;
+      position: relative;
+      z-index: 100;
+    }
+    .ticker-track {
+      display: flex;
+      white-space: nowrap;
+      animation: ticker 45s linear infinite;
+    }
+    .ticker-track span {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.9);
+      font-weight: 500;
+      padding-right: 80px;
+    }
+    /* ── RADIO PLAYER ── */
+.radio-player {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+}
+.radio-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 10px 16px;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: all .2s;
+  white-space: nowrap;
+}
+.radio-btn:hover { border-color: var(--blue); color: var(--blue2); }
+.radio-btn.playing { color: var(--blue2); border-color: var(--blue); }
+.radio-btn.playing .radio-icon { color: var(--blue); }
+.radio-icon {
+  width: 28px; height: 28px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 10px; transition: all .2s;
+}
+.radio-btn.playing .radio-icon { background: var(--blue); border-color: var(--blue); color: #fff; }
+.radio-bars { display: none; align-items: flex-end; gap: 2px; height: 14px; }
+.radio-btn.playing .radio-bars { display: flex; }
+.radio-btn.playing .play-arrow { display: none; }
+.radio-bars span {
+  display: block; width: 2px; background: var(--blue2); border-radius: 1px;
+  animation: bar-bounce var(--dur, .8s) ease-in-out infinite alternate;
+}
+.radio-bars span:nth-child(1) { height: 6px; --dur:.6s; }
+.radio-bars span:nth-child(2) { height: 10px; --dur:.9s; }
+.radio-bars span:nth-child(3) { height: 14px; --dur:.7s; }
+.radio-bars span:nth-child(4) { height: 8px; --dur:1.0s; }
+.radio-bars span:nth-child(5) { height: 12px; --dur:.75s; }
+@keyframes bar-bounce { from { transform: scaleY(.3); } to { transform: scaleY(1); } }
+.radio-label { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+.radio-label-main { color: var(--white); font-size: 9px; letter-spacing: 3px; }
+.radio-label-sub { color: var(--muted); font-size: 8px; letter-spacing: 1px; }
+.radio-btn.playing .radio-label-main { color: var(--blue2); }
+.radio-btn.playing .radio-label-sub { color: var(--soft); }
+.radio-channels {
+  display: none; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--border);
+  border-bottom: none; min-width: 220px; overflow: hidden;
+}
+.radio-channels.open { display: flex; }
+.radio-ch {
+  padding: 9px 16px; cursor: pointer;
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); border-bottom: 1px solid var(--border);
+  transition: all .15s; display: flex; align-items: center; gap: 10px;
+}
+.radio-ch:hover { color: var(--white); background: rgba(61,127,255,.06); }
+.radio-ch.active { color: var(--blue2); background: rgba(61,127,255,.08); }
+.radio-ch-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+.radio-ch.active .radio-ch-dot { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+.radio-ch-info { display: flex; flex-direction: column; gap: 2px; }
+.radio-ch-name { color: inherit; font-size: 9px; }
+.radio-ch-desc { color: var(--muted); font-size: 8px; letter-spacing: 1px; }
+    @keyframes ticker { from{transform:translateX(0);} to{transform:translateX(-50%);} }
+
+    /* ── HEADER ── */
+    header {
+      position: sticky; top:0; z-index:200;
+      background: rgba(7,11,24,.96);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 60px;
+    }
+
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      letter-spacing: 6px;
+      color: var(--white);
+      cursor: pointer;
+      transition: color .2s;
+    }
+    .logo:hover { color: var(--blue2); }
+    .logo em { color: var(--blue); font-style: normal; }
+
+    .header-stats {
+      display: flex;
+      gap: 36px;
+    }
+    .hstat {
+      text-align: center;
+      font-family: 'DM Mono', monospace;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .hstat strong {
+      display: block;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--blue2);
+      letter-spacing: 1px;
+      line-height: 1.1;
+    }
+
+    .header-nav { display:flex; gap:2px; align-items:center; }
+
+    .nav-btn {
+      background: none;
+      border: 1px solid transparent;
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 7px 14px;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .nav-btn:hover, .nav-btn.active {
+      color: var(--white);
+      border-color: var(--border);
+    }
+    .nav-btn.cta {
+      border-color: var(--blue);
+      color: var(--blue2);
+    }
+    .nav-btn.cta:hover {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    /* user bar */
+    .user-bar {
+      display:none;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 32px;
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--muted);
+      justify-content: flex-end;
+      gap: 14px;
+      align-items: center;
+    }
+    .user-bar.show { display:flex; }
+    .uemail { color: var(--blue2); }
+    .btn-xs {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      padding: 3px 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all .15s;
+    }
+    .btn-xs:hover { color: var(--blue2); border-color: var(--blue); }
+
+    /* ── MAIN ── */
+    main { max-width: 1440px; margin: 0 auto; padding: 36px 28px; }
+    .section { display:none; }
+    .section.active { display:block; }
+
+    /* setup notice */
+    .setup-notice {
+      border: 1px solid var(--border);
+      background: rgba(61,127,255,.06);
+      padding: 16px 22px;
+      margin-bottom: 28px;
+      font-size: 12px;
+      line-height: 1.9;
+      font-weight: 300;
+      color: var(--soft);
+    }
+    .setup-notice strong {
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      color: var(--blue2);
+      display: block;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+    }
+    .setup-notice code {
+      background: var(--navy);
+      color: var(--blue2);
+      padding: 1px 5px;
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+    }
+    .setup-notice a { color: var(--blue2); text-decoration: none; }
+
+    /* section header */
+    .sec-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sec-head h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      letter-spacing: 5px;
+      color: var(--white);
+    }
+    .sec-head span {
+      font-family: 'DM Mono', monospace;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 2px;
+    }
+
+    /* ── UNIVERSE PILLS ── */
+    .universe-pills {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .upill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 14px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .upill:hover { color: var(--off); border-color: var(--mid); }
+    .upill.active {
+      border-color: var(--blue);
+      color: var(--blue2);
+      background: var(--glow);
+    }
+    .upill .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--border);
+      flex-shrink: 0;
+      transition: background .15s;
+    }
+    .upill.active .dot { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+    .upill:hover .dot { background: var(--mid); }
+
+    /* ── TOOLBAR ── */
+    .toolbar {
+      display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .search-wrap { flex:1; min-width:200px; position:relative; }
+    .search-wrap::before {
+      content:'→'; position:absolute; left:12px; top:50%;
+      transform:translateY(-50%); color:var(--muted); pointer-events:none;
+    }
+    .search-wrap input {
+      width:100%;
+      padding: 10px 12px 10px 30px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family: 'DM Mono', monospace;
+      font-size: 12px; letter-spacing: 1px;
+      outline: none; transition: border-color .15s;
+    }
+    .search-wrap input:focus { border-color: var(--blue); }
+    .search-wrap input::placeholder { color: var(--muted); }
+
+    select {
+      padding: 10px 28px 10px 12px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family: 'DM Mono', monospace;
+      font-size: 11px; letter-spacing: 1px;
+      outline: none; cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234a5880'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+      transition: border-color .15s;
+    }
+    select:focus { border-color: var(--blue); }
+
+    /* ── GRID ── */
+    .merch-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 1px;
+      background: var(--border);
+    }
+
+    /* ── CARD ── */
+    .merch-card {
+      background: var(--ink);
+      cursor: pointer;
+      overflow: hidden;
+      transition: background .15s;
+      animation: cIn .2s ease both;
+      position: relative;
+    }
+    @keyframes cIn { from{opacity:0;transform:translateY(5px);} to{opacity:1;transform:translateY(0);} }
+    .merch-card:hover { background: var(--card); }
+
+    /* blue top line on hover */
+    .merch-card::before {
+      content:'';
+      position:absolute; top:0; left:0; right:0; height:2px;
+      background: var(--blue);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform .25s ease;
+      z-index:1;
+    }
+    .merch-card:hover::before { transform: scaleX(1); }
+
+    .card-img-wrap {
+      position:relative; aspect-ratio:1;
+      background: var(--panel); overflow:hidden;
+    }
+    .card-img {
+      width:100%; height:100%; object-fit:cover; display:block;
+      transition: transform .45s ease;
+    }
+    .merch-card:hover .card-img { transform: scale(1.06); }
+    .card-placeholder {
+      width:100%; height:100%;
+      display:flex; align-items:center; justify-content:center;
+      font-family:'Bebas Neue',sans-serif; font-size:44px;
+      letter-spacing:4px; color:var(--border);
+    }
+
+    /* status */
+    .card-status {
+      position:absolute; top:10px; left:10px;
+      padding: 3px 9px;
+      font-family:'DM Mono',monospace;
+      font-size: 9px; letter-spacing:2px; text-transform:uppercase;
+    }
+    .s-promo   { background: var(--blue); color: #fff; }
+    .s-retail  { background: rgba(4,6,15,.8); color: var(--muted); border:1px solid var(--border); }
+    .s-limited { background: var(--white); color: var(--ink); }
+    .s-special { background: rgba(61,127,255,.12); color: var(--blue2); border:1px solid var(--blue); }
+
+    .card-body { padding:14px 16px 10px; }
+    .card-universe {
+      font-family:'DM Mono',monospace; font-size:9px;
+      letter-spacing:3px; color:var(--muted); text-transform:uppercase; margin-bottom:4px;
+    }
+    .card-name {
+      font-family:'Bebas Neue',sans-serif; font-size:19px;
+      letter-spacing:2px; line-height:1.1; color:var(--white); margin-bottom:2px;
+    }
+    .card-brand { font-size:12px; font-weight:300; color:var(--muted); margin-bottom:8px; }
+    .card-tags  { display:flex; flex-wrap:wrap; gap:4px; }
+    .tag {
+      padding:2px 6px;
+      background:var(--panel); border:1px solid var(--border);
+      font-family:'DM Mono',monospace; font-size:9px;
+      letter-spacing:1px; color:var(--muted); text-transform:uppercase;
+    }
+    .card-foot {
+      padding:9px 16px; border-top:1px solid var(--border);
+      display:flex; justify-content:space-between;
+      font-family:'DM Mono',monospace; font-size:10px; color:var(--muted);
+    }
+    .card-year { color:var(--blue2); }
+
+    /* empty / loading */
+    .empty-state {
+      grid-column:1/-1; background:var(--ink);
+      text-align:center; padding:100px 20px;
+    }
+    .empty-state p {
+      font-family:'Bebas Neue',sans-serif; font-size:24px;
+      letter-spacing:5px; color:var(--border);
+    }
+    .loading-state {
+      grid-column:1/-1; background:var(--ink);
+      text-align:center; padding:80px;
+      font-family:'DM Mono',monospace; font-size:11px;
+      letter-spacing:4px; color:var(--muted); text-transform:uppercase;
+    }
+
+    /* ── MODAL ── */
+    .modal-bg {
+      display:none; position:fixed; inset:0;
+      background:rgba(4,6,15,.93); z-index:999;
+      align-items:center; justify-content:center; padding:24px;
+    }
+    .modal-bg.open { display:flex; }
+    .modal {
+      background: var(--navy);
+      border: 1px solid var(--border);
+      max-width:740px; width:100%;
+      max-height:90vh; overflow-y:auto;
+      animation: mIn .2s ease;
+      position:relative;
+    }
+    .modal::before {
+      content:'';
+      position:absolute; top:0; left:0; right:0; height:2px;
+      background: linear-gradient(90deg, var(--blue), var(--blue2), rgba(61,127,255,0));
+    }
+    @keyframes mIn { from{transform:translateY(10px);opacity:0;} to{transform:translateY(0);opacity:1;} }
+    .modal-head {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:16px 24px; border-bottom:1px solid var(--border);
+    }
+    .modal-head-title {
+      font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:3px;
+    }
+    .modal-close {
+      background:none; border:none; color:var(--muted);
+      font-size:20px; cursor:pointer; padding:4px;
+    }
+    .modal-close:hover { color:var(--blue2); }
+    .modal-content { padding:28px; }
+    .modal-img {
+      width:100%; max-height:360px; object-fit:contain;
+      background:var(--panel); display:block; margin-bottom:24px;
+    }
+    .detail-row {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-bottom:22px;
+    }
+    .detail-block label {
+      display:block;
+      font-family:'DM Mono',monospace; font-size:9px;
+      letter-spacing:3px; color:var(--muted); text-transform:uppercase; margin-bottom:4px;
+    }
+    .detail-block span { font-size:14px; font-weight:500; color:var(--white); }
+    .detail-desc {
+      padding-top:20px; border-top:1px solid var(--border); margin-bottom:18px;
+    }
+    .detail-desc label {
+      display:block;
+      font-family:'DM Mono',monospace; font-size:9px;
+      letter-spacing:3px; color:var(--muted); text-transform:uppercase; margin-bottom:7px;
+    }
+    .detail-desc p { font-size:14px; font-weight:300; line-height:1.75; color:var(--off); }
+    .modal-tags { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:18px; }
+    .modal-link {
+      display:inline-flex; align-items:center; gap:8px;
+      padding:10px 18px; border:1px solid var(--blue);
+      color:var(--blue2); font-family:'DM Mono',monospace; font-size:11px;
+      letter-spacing:2px; text-decoration:none; text-transform:uppercase; transition:all .15s;
+    }
+    .modal-link:hover { background:var(--blue); color:#fff; }
+
+    /* ── FORMS ── */
+    .panel-wrap { max-width:760px; margin:0 auto; }
+    .auth-wrap  { max-width:440px; margin:0 auto; }
+
+    .form-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 36px;
+      position: relative;
+    }
+    .form-panel::before {
+      content:'';
+      position:absolute; top:0; left:0; right:0; height:2px;
+      background: linear-gradient(90deg, var(--blue), rgba(61,127,255,0));
+    }
+    .panel-title {
+      font-family:'Bebas Neue',sans-serif; font-size:26px;
+      letter-spacing:4px; color:var(--white); margin-bottom:26px;
+    }
+
+    .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    .form-full { grid-column:1/-1; }
+    .fgroup label {
+      display:block;
+      font-family:'DM Mono',monospace; font-size:9px;
+      letter-spacing:3px; color:var(--muted); text-transform:uppercase; margin-bottom:6px;
+    }
+    .fgroup input,
+    .fgroup select,
+    .fgroup textarea {
+      width:100%; padding:10px 12px;
+      background: var(--navy);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family:'Space Grotesk',sans-serif; font-size:14px; font-weight:300;
+      outline:none; transition:border-color .15s;
+    }
+    .fgroup input:focus,
+    .fgroup select:focus,
+    .fgroup textarea:focus { border-color:var(--blue); }
+    .fgroup textarea { resize:vertical; min-height:88px; }
+
+    .btn-primary {
+      width:100%; padding:12px;
+      background: var(--blue);
+      border:none; color:#fff;
+      font-family:'Bebas Neue',sans-serif; font-size:16px; letter-spacing:4px;
+      cursor:pointer; transition:background .15s; margin-top:8px;
+    }
+    .btn-primary:hover { background: var(--blue2); }
+
+    .form-alt {
+      text-align:center; margin-top:16px;
+      font-family:'DM Mono',monospace; font-size:11px; letter-spacing:1px; color:var(--muted);
+    }
+    .form-alt a { color:var(--blue2); cursor:pointer; }
+    .form-alt a:hover { color:var(--white); }
+
+    .upload-zone {
+      border:1px dashed var(--mid); padding:32px;
+      text-align:center; cursor:pointer;
+      background:var(--navy); transition:border-color .15s;
+    }
+    .upload-zone:hover { border-color:var(--blue); }
+    .upload-zone input { display:none; }
+    .upload-lbl {
+      font-family:'DM Mono',monospace; font-size:11px;
+      letter-spacing:2px; color:var(--muted); text-transform:uppercase;
+    }
+    .upload-preview { max-width:100%; max-height:180px; display:none; margin-top:12px; }
+
+    .tags-box { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+    .ttog {
+      padding:3px 10px;
+      border:1px solid var(--border); background:none;
+      color:var(--muted);
+      font-family:'DM Mono',monospace; font-size:10px; letter-spacing:1px;
+      text-transform:uppercase; cursor:pointer; transition:all .12s;
+    }
+    .ttog:hover { color:var(--off); border-color:var(--mid); }
+    .ttog.sel { background:var(--blue); color:#fff; border-color:var(--blue); }
+
+    .alert {
+      padding:10px 14px; margin-bottom:16px;
+      font-family:'DM Mono',monospace; font-size:11px;
+      letter-spacing:1px; display:none; text-transform:uppercase;
+    }
+    .alert.show { display:block; }
+    .alert-ok  { background:rgba(0,80,0,.2); border:1px solid #1a4a1a; color:#4aaa4a; }
+    .alert-err { background:rgba(80,20,20,.2); border:1px solid #aa3333; color:#dd6666; }
+
+    #add-gated { text-align:center; padding:60px 20px; }
+    #add-gated p {
+      font-family:'Bebas Neue',sans-serif; font-size:20px;
+      letter-spacing:4px; color:var(--muted); margin-bottom:20px;
+    }
+
+    @media (max-width:768px) {
+      .header-stats { display:none; }
+      .header-inner { padding:0 16px; }
+      main { padding:24px 16px; }
+      .form-grid { grid-template-columns:1fr; }
+      .detail-row { grid-template-columns:1fr 1fr; }
+    }
+    /* ── MULTI-PHOTOS ── */
+.photo-grid { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+.photo-thumb {
+  width:80px; height:80px; object-fit:cover; cursor:pointer;
+  border:2px solid transparent; transition:border-color .15s;
+}
+.photo-thumb.active { border-color:var(--blue); }
+.photo-thumb-wrap { position:relative; }
+.photo-del {
+  position:absolute; top:-6px; right:-6px;
+  background:var(--blue); color:#fff; border:none;
+  width:18px; height:18px; border-radius:50%; cursor:pointer;
+  font-size:11px; line-height:18px; text-align:center; display:none;
+}
+.photo-thumb-wrap:hover .photo-del { display:block; }
+
+/* ── EDIT MODAL ── */
+.edit-modal-bg {
+  display:none; position:fixed; inset:0;
+  background:rgba(4,6,15,.95); z-index:1000;
+  align-items:center; justify-content:center; padding:24px;
+  overflow-y:auto;
+}
+.edit-modal-bg.open { display:flex; }
+.edit-modal {
+  background:var(--navy); border:1px solid var(--border);
+  max-width:760px; width:100%; max-height:90vh; overflow-y:auto;
+  position:relative; animation:mIn .2s ease;
+}
+.edit-modal::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,var(--blue),rgba(61,127,255,0));
+}
+.edit-head {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:16px 24px; border-bottom:1px solid var(--border);
+}
+.edit-head-title {
+  font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:3px;
+}
+.edit-close {
+  background:none; border:none; color:var(--muted);
+  font-size:20px; cursor:pointer; padding:4px;
+}
+.edit-close:hover { color:var(--blue2); }
+.edit-content { padding:28px; }
+
+/* bouton modifier dans modal */
+.btn-edit {
+  display:inline-flex; align-items:center; gap:7px;
+  padding:9px 16px; border:1px solid var(--blue);
+  color:var(--blue2); font-family:'DM Mono',monospace; font-size:11px;
+  letter-spacing:2px; text-transform:uppercase; cursor:pointer;
+  background:none; transition:all .15s;
+}
+.btn-edit:hover { background:var(--blue); color:#fff; }
+.btn-danger {
+  display:inline-flex; align-items:center; gap:7px;
+  padding:9px 16px; border:1px solid #aa3333;
+  color:#dd6666; font-family:'DM Mono',monospace; font-size:11px;
+  letter-spacing:2px; text-transform:uppercase; cursor:pointer;
+  background:none; transition:all .15s;
+}
+.btn-danger:hover { background:#aa3333; color:#fff; }
+
+/* ── GROUPS / BROWSE ── */
+.browse-header {
+  display:flex; align-items:center; gap:14px;
+  margin-bottom:28px; padding-bottom:16px;
+  border-bottom:1px solid var(--border);
+}
+.browse-back {
+  background:none; border:1px solid var(--border);
+  color:var(--muted); font-family:'DM Mono',monospace;
+  font-size:10px; letter-spacing:2px; text-transform:uppercase;
+  padding:7px 14px; cursor:pointer; transition:all .15s;
+}
+.browse-back:hover { color:var(--blue2); border-color:var(--blue); }
+.browse-breadcrumb {
+  font-family:'DM Mono',monospace; font-size:10px;
+  letter-spacing:2px; color:var(--muted); text-transform:uppercase;
+}
+.browse-breadcrumb span { color:var(--blue2); }
+
+.groups-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:1px; background:var(--border);
+  margin-bottom:40px;
+}
+.group-card {
+  background:var(--ink); padding:22px 20px;
+  cursor:pointer; transition:background .15s;
+  position:relative; overflow:hidden;
+  animation:cIn .2s ease both;
+}
+.group-card::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:var(--blue); transform:scaleX(0);
+  transform-origin:left; transition:transform .25s ease;
+}
+.group-card:hover { background:var(--card); }
+.group-card:hover::before { transform:scaleX(1); }
+.group-card-icon {
+  font-size:28px; margin-bottom:10px; display:block;
+  font-family:'Bebas Neue',sans-serif; color:var(--border);
+  letter-spacing:2px;
+}
+.group-card-name {
+  font-family:'Bebas Neue',sans-serif; font-size:20px;
+  letter-spacing:3px; color:var(--white); margin-bottom:4px;
+}
+.group-card-meta {
+  font-family:'DM Mono',monospace; font-size:9px;
+  letter-spacing:2px; color:var(--muted); text-transform:uppercase;
+}
+.group-card-count {
+  position:absolute; top:14px; right:14px;
+  font-family:'DM Mono',monospace; font-size:9px;
+  letter-spacing:2px; color:var(--blue2); text-transform:uppercase;
+}
+.group-add-card {
+  background:var(--panel); padding:22px 20px;
+  cursor:pointer; transition:all .15s;
+  border:1px dashed var(--mid);
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  text-align:center; min-height:100px;
+}
+.group-add-card:hover { border-color:var(--blue); background:var(--glow); }
+.group-add-card span {
+  font-family:'DM Mono',monospace; font-size:10px;
+  letter-spacing:2px; color:var(--muted); text-transform:uppercase;
+}
+.group-add-card:hover span { color:var(--blue2); }
+
+/* create group modal */
+.create-group-modal-bg {
+  display:none; position:fixed; inset:0;
+  background:rgba(4,6,15,.95); z-index:1100;
+  align-items:center; justify-content:center; padding:24px;
+}
+.create-group-modal-bg.open { display:flex; }
+.create-group-modal {
+  background:var(--navy); border:1px solid var(--border);
+  max-width:500px; width:100%; position:relative;
+  animation:mIn .2s ease;
+}
+.create-group-modal::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,var(--blue),rgba(61,127,255,0));
+}
+
+/* ── ADMIN PANEL ── */
+.admin-panel { max-width:900px; margin:0 auto; }
+.admin-section { margin-bottom:48px; }
+.admin-section-title {
+  font-family:'Bebas Neue',sans-serif; font-size:22px;
+  letter-spacing:4px; color:var(--blue2); margin-bottom:16px;
+  padding-bottom:8px; border-bottom:1px solid var(--border);
+}
+.admin-table {
+  width:100%; border-collapse:collapse; background:var(--panel);
+  border:1px solid var(--border);
+}
+.admin-table th {
+  font-family:'DM Mono',monospace; font-size:9px;
+  letter-spacing:3px; color:var(--muted); text-transform:uppercase;
+  padding:10px 14px; border-bottom:1px solid var(--border);
+  text-align:left; background:var(--navy);
+}
+.admin-table td {
+  padding:12px 14px; border-bottom:1px solid var(--border);
+  font-size:13px; color:var(--off); vertical-align:middle;
+}
+.admin-table tr:last-child td { border-bottom:none; }
+.admin-table tr:hover td { background:rgba(61,127,255,.04); }
+.admin-table td .tag { font-size:8px; }
+.btn-approve {
+  background:none; border:1px solid #1a5c1a; color:#4aaa4a;
+  font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px;
+  text-transform:uppercase; padding:4px 10px; cursor:pointer; transition:all .15s;
+}
+.btn-approve:hover { background:#1a5c1a; }
+.btn-reject {
+  background:none; border:1px solid #aa3333; color:#dd6666;
+  font-family:'DM Mono',monospace; font-size:9px; letter-spacing:2px;
+  text-transform:uppercase; padding:4px 10px; cursor:pointer; transition:all .15s; margin-left:6px;
+}
+.btn-reject:hover { background:#aa3333; color:#fff; }
+.admin-empty {
+  font-family:'DM Mono',monospace; font-size:11px;
+  letter-spacing:2px; color:var(--muted); text-transform:uppercase;
+  padding:30px; text-align:center;
+}
+.nav-btn.admin-nav { border-color:rgba(255,100,100,.3); color:#dd6666; }
+.nav-btn.admin-nav:hover { border-color:#aa3333; background:rgba(170,51,51,.1); }
+  </style>
+</head>
+<body>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-track">
+    <span>MERCH.ARCHIVE — DATABASE COMMUNAUTAIRE</span>
+    <span>FILM · SÉRIE · MUSIQUE · JEUX VIDÉO · COMICS · ANIME · SPORT · MARQUES</span>
+    <span>CONTRIBUTE — ADD YOUR ITEMS</span>
+    <span>COOL CATS × ED BANGER RECORDS — ARCHIVE EN COURS</span>
+    <span>BROCKUM · WINTERLAND · GIANT · CHANGES · LIQUID BLUE</span>
+    <span>OPEN SOURCE MERCH HISTORY</span>
+    <span>MERCH.ARCHIVE — DATABASE COMMUNAUTAIRE</span>
+    <span>FILM · SÉRIE · MUSIQUE · JEUX VIDÉO · COMICS · ANIME · SPORT · MARQUES</span>
+    <span>CONTRIBUTE — ADD YOUR ITEMS</span>
+    <span>COOL CATS × ED BANGER RECORDS — ARCHIVE EN COURS</span>
+    <span>BROCKUM · WINTERLAND · GIANT · CHANGES · LIQUID BLUE</span>
+    <span>OPEN SOURCE MERCH HISTORY</span>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <div class="logo" onclick="showSection('explore')">MERCH<em>.</em>ARCHIVE</div>
+    <div class="header-stats">
+      <div class="hstat"><strong id="stat-total">—</strong>ARCHIVÉS</div>
+      <div class="hstat"><strong id="stat-contrib">—</strong>CONTRIBUTEURS</div>
+      <div class="hstat"><strong>8</strong>UNIVERS</div>
+    </div>
+    <div class="header-nav">
+      <button class="nav-btn active" onclick="showSection('explore')">EXPLORER</button>
+      <button class="nav-btn" onclick="showSection('browse')">UNIVERS</button>
+      <button class="nav-btn" onclick="showSection('add')">+ SOUMETTRE</button>
+      <button class="nav-btn admin-nav" id="nav-admin" style="display:none" onclick="showSection('admin')">⚡ ADMIN</button>
+      <button class="nav-btn cta" onclick="showSection('auth')" id="nav-auth">CONNEXION</button>
+    </div>
+  </div>
+  <div class="user-bar" id="user-bar">
+    <span>CONNECTÉ</span>
+    <span class="uemail" id="user-email"></span>
+    <button class="btn-xs" onclick="logout()">DÉCONNEXION</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── EXPLORE ── -->
+  <section class="section active" id="section-explore">
+
+    <div class="setup-notice" id="setup-notice">
+      <strong>⚙ Configuration Supabase requise</strong>
+      Remplace <code>SUPABASE_URL</code> et <code>SUPABASE_ANON_KEY</code> dans le script.
+      Voir <code>README.md</code> pour le schéma SQL complet.
+      <a href="https://supabase.com" target="_blank">→ supabase.com (gratuit)</a>
+      — Données de démo actives (Cool Cats × Ed Banger).
+    </div>
+
+    <div class="sec-head">
+      <h2>THE ARCHIVE</h2>
+      <span id="result-count">— ITEMS</span>
+    </div>
+
+    <!-- UNIVERSE PILLS -->
+    <div class="universe-pills">
+      <button class="upill active" onclick="setU(this,'')"><span class="dot"></span>TOUS</button>
+      <button class="upill" onclick="setU(this,'film')"><span class="dot"></span>FILM</button>
+      <button class="upill" onclick="setU(this,'serie')"><span class="dot"></span>SÉRIE</button>
+      <button class="upill" onclick="setU(this,'musique')"><span class="dot"></span>MUSIQUE</button>
+      <button class="upill" onclick="setU(this,'jeux')"><span class="dot"></span>JEUX VIDÉO</button>
+      <button class="upill" onclick="setU(this,'comics')"><span class="dot"></span>COMICS & BD</button>
+      <button class="upill" onclick="setU(this,'anime')"><span class="dot"></span>ANIME & MANGA</button>
+      <button class="upill" onclick="setU(this,'sport')"><span class="dot"></span>SPORT</button>
+      <button class="upill" onclick="setU(this,'marques')"><span class="dot"></span>MARQUES</button>
+    </div>
+
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <input type="text" id="search-input" placeholder="Rechercher..." oninput="filterItems()">
+      </div>
+      <select id="filter-type" onchange="filterItems()">
+        <option value="">TOUS TYPES</option>
+        <option value="clothes">VÊTEMENTS</option>
+        <option value="objects">OBJETS</option>
+        <option value="art-prints">ART & PRINTS</option>
+        <option value="figurines">FIGURINES</option>
+      </select>
+      <select id="filter-status" onchange="filterItems()">
+        <option value="">TOUS STATUTS</option>
+        <option value="promo">PROMO</option>
+        <option value="retail">GRAND PUBLIC</option>
+        <option value="limited">LIMITED EDITION</option>
+        <option value="special">SPECIAL / RARE</option>
+      </select>
+      <select id="sort-by" onchange="filterItems()">
+        <option value="date">PLUS RÉCENTS</option>
+        <option value="year-desc">ANNÉE ↓</option>
+        <option value="year-asc">ANNÉE ↑</option>
+        <option value="name">A → Z</option>
+      </select>
+    </div>
+
+    <div class="merch-grid" id="merch-grid">
+      <div class="loading-state">CHARGEMENT...</div>
+    </div>
+
+  </section>
+
+  <!-- ── BROWSE (UNIVERS → GROUPES → ITEMS) ── -->
+  <section class="section" id="section-browse">
+    <div id="browse-content"></div>
+  </section>
+
+  <!-- ── ADMIN ── -->
+  <section class="section" id="section-admin">
+    <div class="admin-panel">
+      <div class="sec-head"><h2>ADMIN PANEL</h2></div>
+
+      <div class="admin-section">
+        <div class="admin-section-title">GROUPES EN ATTENTE DE VALIDATION</div>
+        <div id="admin-groups-pending">
+          <div class="admin-empty">CHARGEMENT...</div>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section-title">TOUS LES ITEMS — SUPPRESSION</div>
+        <div style="margin-bottom:12px;">
+          <input type="text" id="admin-search" placeholder="Rechercher un item à supprimer..."
+            style="width:100%;padding:10px 12px;background:var(--panel);border:1px solid var(--border);color:var(--white);font-family:'DM Mono',monospace;font-size:12px;outline:none;"
+            oninput="adminFilterItems()">
+        </div>
+        <div id="admin-items-table">
+          <div class="admin-empty">CHARGEMENT...</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ADD ── -->
+  <section class="section" id="section-add">
+    <div class="panel-wrap">
+      <div class="sec-head"><h2>SOUMETTRE UN ITEM</h2></div>
+      <div id="add-gated" style="display:none">
+        <p>CONNEXION REQUISE</p>
+        <button class="btn-primary" style="width:auto;padding:12px 40px;" onclick="showSection('auth')">SE CONNECTER →</button>
+      </div>
+      <div id="add-form-wrap">
+        <div class="form-panel">
+          <div class="panel-title">NOUVEL ITEM</div>
+          <div class="alert" id="add-alert"></div>
+          <form id="add-form" onsubmit="submitMerch(event)">
+            <div class="form-grid">
+
+              <div class="fgroup form-full">
+                <label>PHOTO</label>
+                <div class="upload-zone" onclick="document.getElementById('img-input').click()">
+                  <div class="upload-lbl">↑ CLIQUER POUR UPLOADER</div>
+                  <input type="file" id="img-input" accept="image/*" onchange="previewImg(this)">
+                  <img id="upload-preview" class="upload-preview" alt="">
+                </div>
+              </div>
+
+              <div class="fgroup">
+                <label>NOM DE L'ITEM *</label>
+                <input type="text" id="item-name" required placeholder="ex: Tour Tee 1994">
+              </div>
+              <div class="fgroup">
+                <label>ARTISTE / MARQUE / TITRE *</label>
+                <input type="text" id="item-brand" required placeholder="ex: Ed Banger Records">
+              </div>
+
+              <div class="fgroup">
+                <label>UNIVERS *</label>
+                <select id="item-universe" required onchange="onUniChange()">
+                  <option value="">Sélectionner...</option>
+                  <option value="film">FILM</option>
+                  <option value="serie">SÉRIE</option>
+                  <option value="musique">MUSIQUE</option>
+                  <option value="jeux">JEUX VIDÉO</option>
+                  <option value="comics">COMICS & BD</option>
+                  <option value="anime">ANIME & MANGA</option>
+                  <option value="sport">SPORT & ÉQUIPES</option>
+                  <option value="marques">MARQUES & STREETWEAR</option>
+                </select>
+              </div>
+              <div class="fgroup">
+                <label>TYPE DE PRODUIT *</label>
+                <select id="item-type" required>
+                  <option value="">Sélectionner...</option>
+                  <optgroup label="VÊTEMENTS">
+                    <option>T-shirt</option><option>Hoodie / Sweatshirt</option>
+                    <option>Jacket</option><option>Coat</option>
+                    <option>Pants</option><option>Shorts</option>
+                    <option>Socks</option><option>Sneakers / Shoes</option>
+                    <option>Cap / Beanie</option><option>Accessoire mode</option>
+                  </optgroup>
+                  <optgroup label="OBJETS">
+                    <option>Mug / Verre</option><option>Bouteille / Thermos</option>
+                    <option>Sac / Tote Bag</option><option>Backpack</option>
+                    <option>Bijou</option><option>Phone Case</option>
+                    <option>Badge / Pin</option><option>Keychain</option>
+                    <option>Press Kit</option><option>Promo Giveaway</option>
+                    <option>Objet Déco</option>
+                  </optgroup>
+                  <optgroup label="ART & PRINTS">
+                    <option>Poster</option><option>Art Print</option>
+                    <option>Lithograph</option><option>Sticker Sheet</option>
+                    <option>Collectible Card</option><option>Postcard</option>
+                  </optgroup>
+                  <optgroup label="FIGURINES & COLLECTIBLES">
+                    <option>Action Figure</option><option>Statue / Bust</option>
+                    <option>Mini Figure</option><option>Blind Box</option>
+                    <option>Plush Toy</option><option>Board Game / Cards</option>
+                  </optgroup>
+                </select>
+              </div>
+
+              <div class="fgroup">
+                <label>STATUT *</label>
+                <select id="item-status" required>
+                  <option value="">Sélectionner...</option>
+                  <option value="promo">PROMO — Press / Not for sale</option>
+                  <option value="retail">GRAND PUBLIC — Vendu en commerce</option>
+                  <option value="limited">LIMITED EDITION — Numéroté / Exclusif</option>
+                  <option value="special">SPECIAL / RARE — Signé, prototype</option>
+                </select>
+              </div>
+              <div class="fgroup">
+                <label>ANNÉE</label>
+                <input type="number" id="item-year" min="1950" max="2030" placeholder="ex: 2003">
+              </div>
+
+              <div class="fgroup form-full" id="tee-wrap" style="display:none">
+                <label>MANUFACTURER DU TEE</label>
+                <select id="item-tee">
+                  <option value="">Inconnu / N/A</option>
+                  <option>3D Emblem</option><option>All Sport</option>
+                  <option>Alstyle (AAA)</option><option>Anvil Nicaragua</option>
+                  <option>Backstage Pass</option><option>Brockum: Group</option>
+                  <option>Brockum: Collection</option><option>Brockum: Worldwide</option>
+                  <option>Brockum: Worldwide (Made in China)</option>
+                  <option>Changes</option><option>Cronies Fantasy</option>
+                  <option>FOTL (Fruit of the Loom)</option><option>GEM</option>
+                  <option>Giant: by Anvil</option><option>Giant: by Tee Jays</option>
+                  <option>Giant: by Tultex</option><option>Giant: Generic</option>
+                  <option>Gildan (3)</option><option>Hanes: Blue Bar</option>
+                  <option>Hanes: Heavyweight Ultraweight</option>
+                  <option>Hanes: Heavyweight Double</option>
+                  <option>Liquid Blue</option><option>Oneita Power-T</option>
+                  <option>Screen Stars Value Weight</option>
+                  <option>Sof Tee by Tee Jays</option><option>Spring Ford</option>
+                  <option>TULTEX</option><option>Wild Oats</option><option>Winterland</option>
+                </select>
+              </div>
+
+              <div class="fgroup form-full">
+                <label>DESCRIPTION</label>
+                <textarea id="item-desc" placeholder="Édition, matière, état, contexte..."></textarea>
+              </div>
+              <div class="fgroup form-full">
+                <label>LIEN DE RÉFÉRENCE</label>
+                <input type="url" id="item-link" placeholder="https://...">
+              </div>
+              <div class="fgroup form-full">
+                <label>TAGS <small style="color:var(--border);font-size:9px;letter-spacing:1px;">(cliquer pour sélectionner)</small></label>
+                <div class="tags-box" id="tags-box"></div>
+                <input type="hidden" id="sel-tags" value="[]">
+              </div>
+            </div>
+            <button type="submit" class="btn-primary" style="margin-top:20px;">SOUMETTRE À L'ARCHIVE →</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── AUTH ── -->
+  <section class="section" id="section-auth">
+    <div class="auth-wrap">
+      <div class="form-panel" id="panel-login">
+        <div class="panel-title">CONNEXION</div>
+        <div class="alert" id="login-alert"></div>
+        <form onsubmit="doLogin(event)">
+          <div class="fgroup" style="margin-bottom:16px">
+            <label>EMAIL</label>
+            <input type="email" id="login-email" required placeholder="vous@exemple.com">
+          </div>
+          <div class="fgroup" style="margin-bottom:16px">
+            <label>MOT DE PASSE</label>
+            <input type="password" id="login-pass" required placeholder="••••••••">
+          </div>
+          <button type="submit" class="btn-primary">SE CONNECTER</button>
+        </form>
+        <div class="form-alt">PAS DE COMPTE ? <a onclick="toggleAuth('register')">EN CRÉER UN</a></div>
+      </div>
+      <div class="form-panel" id="panel-register" style="display:none">
+        <div class="panel-title">CRÉER UN COMPTE</div>
+        <div class="alert" id="reg-alert"></div>
+        <form onsubmit="doRegister(event)">
+          <div class="fgroup" style="margin-bottom:16px">
+            <label>EMAIL</label>
+            <input type="email" id="reg-email" required placeholder="vous@exemple.com">
+          </div>
+          <div class="fgroup" style="margin-bottom:16px">
+            <label>MOT DE PASSE</label>
+            <input type="password" id="reg-pass" required placeholder="min. 6 caractères">
+          </div>
+          <button type="submit" class="btn-primary">REJOINDRE L'ARCHIVE</button>
+        </form>
+        <div class="form-alt">DÉJÀ MEMBRE ? <a onclick="toggleAuth('login')">SE CONNECTER</a></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- CREATE GROUP MODAL -->
+<div class="create-group-modal-bg" id="create-group-modal" onclick="closeCreateGroupModal(event)">
+  <div class="create-group-modal">
+    <div class="edit-head">
+      <div class="edit-head-title" id="create-group-title">CRÉER UN GROUPE</div>
+      <button class="edit-close" onclick="document.getElementById('create-group-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="edit-content">
+      <div class="alert" id="group-alert"></div>
+      <form id="create-group-form" onsubmit="submitGroup(event)">
+        <input type="hidden" id="group-parent-id" value="">
+        <input type="hidden" id="group-universe" value="">
+        <input type="hidden" id="group-level" value="1">
+        <div class="fgroup" style="margin-bottom:16px">
+          <label>NOM *</label>
+          <input type="text" id="group-name" required placeholder="ex: Justice, Star Wars, Daft Punk...">
+        </div>
+        <div class="fgroup" style="margin-bottom:16px">
+          <label>DESCRIPTION</label>
+          <textarea id="group-desc" style="min-height:70px;" placeholder="Quelques mots sur ce groupe..."></textarea>
+        </div>
+        <div class="fgroup" style="margin-bottom:20px">
+          <label>IMAGE (URL)</label>
+          <input type="url" id="group-img" placeholder="https://...">
+        </div>
+        <button type="submit" class="btn-primary">SOUMETTRE LE GROUPE →</button>
+      </form>
+    </div>
+  </div>
+</div>
+<div class="edit-modal-bg" id="edit-modal" onclick="closeEditModal(event)">
+  <div class="edit-modal">
+    <div class="edit-head">
+      <div class="edit-head-title">MODIFIER L'ITEM</div>
+      <button class="edit-close" onclick="document.getElementById('edit-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="edit-content">
+      <div class="alert" id="edit-alert"></div>
+
+      <!-- photos existantes -->
+      <div style="margin-bottom:18px;">
+        <label style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:8px;">PHOTOS ACTUELLES</label>
+        <div class="photo-grid" id="edit-photos-grid"></div>
+        <div class="upload-zone" style="margin-top:8px;" onclick="document.getElementById('edit-img-input').click()">
+          <div class="upload-lbl">↑ AJOUTER DES PHOTOS (max 5)</div>
+          <input type="file" id="edit-img-input" accept="image/*" multiple onchange="previewEditImgs(this)">
+        </div>
+        <div class="photo-grid" id="edit-new-previews" style="margin-top:8px;"></div>
+      </div>
+
+      <form id="edit-form" onsubmit="saveEdit(event)">
+        <input type="hidden" id="edit-item-id">
+        <div class="form-grid">
+          <div class="fgroup">
+            <label>NOM *</label>
+            <input type="text" id="edit-name" required>
+          </div>
+          <div class="fgroup">
+            <label>ARTISTE / MARQUE</label>
+            <input type="text" id="edit-brand">
+          </div>
+          <div class="fgroup">
+            <label>UNIVERS</label>
+            <select id="edit-universe">
+              <option value="film">FILM</option>
+              <option value="serie">SÉRIE</option>
+              <option value="musique">MUSIQUE</option>
+              <option value="jeux">JEUX VIDÉO</option>
+              <option value="comics">COMICS & BD</option>
+              <option value="anime">ANIME & MANGA</option>
+              <option value="sport">SPORT</option>
+              <option value="marques">MARQUES</option>
+            </select>
+          </div>
+          <div class="fgroup">
+            <label>STATUT</label>
+            <select id="edit-status">
+              <option value="promo">PROMO</option>
+              <option value="retail">GRAND PUBLIC</option>
+              <option value="limited">LIMITED EDITION</option>
+              <option value="special">SPECIAL / RARE</option>
+            </select>
+          </div>
+          <div class="fgroup">
+            <label>TYPE DE PRODUIT</label>
+            <input type="text" id="edit-type">
+          </div>
+          <div class="fgroup">
+            <label>ANNÉE</label>
+            <input type="number" id="edit-year" min="1950" max="2030">
+          </div>
+          <div class="fgroup form-full">
+            <label>DESCRIPTION</label>
+            <textarea id="edit-desc" style="min-height:80px;"></textarea>
+          </div>
+          <div class="fgroup form-full">
+            <label>LIEN</label>
+            <input type="url" id="edit-link">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+          <button type="submit" class="btn-primary" style="width:auto;padding:11px 28px;">SAUVEGARDER →</button>
+          <button type="button" class="btn-danger" onclick="deleteItem()">SUPPRIMER CET ITEM</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+  <!-- RADIO PLAYER -->
+<div class="radio-player" id="radio-player">
+  <div class="radio-channels" id="radio-channels">
+    <div class="radio-ch active" onclick="selectChannel(0)">
+      <div class="radio-ch-dot"></div>
+      <div class="radio-ch-info">
+        <span class="radio-ch-name">ED BANGER RADIO</span>
+        <span class="radio-ch-desc">French touch · Electro · Blog house</span>
+      </div>
+    </div>
+    <div class="radio-ch" onclick="selectChannel(1)">
+      <div class="radio-ch-dot"></div>
+      <div class="radio-ch-info">
+        <span class="radio-ch-name">CLUB TO CLUB</span>
+        <span class="radio-ch-desc">Techno · Electronic · Underground</span>
+      </div>
+    </div>
+    <div class="radio-ch" onclick="selectChannel(2)">
+      <div class="radio-ch-dot"></div>
+      <div class="radio-ch-info">
+        <span class="radio-ch-name">LOFI ARCHIVE</span>
+        <span class="radio-ch-desc">Chill beats · Study · Ambient</span>
+      </div>
+    </div>
+    <div class="radio-ch" onclick="selectChannel(3)">
+      <div class="radio-ch-dot"></div>
+      <div class="radio-ch-info">
+        <span class="radio-ch-name">ROCK RADIO</span>
+        <span class="radio-ch-desc">Rock · Classic · Live</span>
+      </div>
+    </div>
+  </div>
+  <button class="radio-btn" id="radio-btn" onclick="toggleRadio()">
+    <div class="radio-icon">
+      <span class="play-arrow">▶</span>
+      <div class="radio-bars"><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+    <div class="radio-label">
+      <span class="radio-label-main" id="radio-ch-name">RADIO</span>
+      <span class="radio-label-sub" id="radio-ch-sub">SELECT A CHANNEL</span>
+    </div>
+    <span id="radio-caret" style="font-size:8px;color:var(--muted);margin-left:4px;">▲</span>
+  </button>
+</div>
+<div id="radio-iframe-wrap" style="position:fixed;bottom:-1px;right:-1px;width:1px;height:1px;overflow:hidden;pointer-events:none;opacity:0;"></div>
+<!-- MODAL -->
+<div class="modal-bg" id="modal" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-head-title" id="modal-title">—</div>
+      <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-content" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════
+// CONFIG — remplace ici
+// ═══════════════════════════════════
+var SUPABASE_URL = 'https://vjjwoptvzgzcniowbmsw.supabase.co';
+var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZqandvcHR2emd6Y25pb3dibXN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMjk0MTIsImV4cCI6MjA4NzcwNTQxMn0.xE87-x6QmG5wd2wn3VPIaXfE-cz-282nmi-524cTjCY';
+var configured = SUPABASE_URL !== 'SUPABASE_URL';
+
+var sb=null, currentUser=null, allItems=[], activeU='';
+
+// ═══════════════════════════════════
+// LABELS
+// ═══════════════════════════════════
+var U_LABEL = {film:'FILM',serie:'SÉRIE',musique:'MUSIQUE',jeux:'JEUX VIDÉO',
+  comics:'COMICS & BD',anime:'ANIME & MANGA',sport:'SPORT',marques:'MARQUES'};
+var U_ICON  = {film:'◈',serie:'▶',musique:'♫',jeux:'⊕',comics:'✦',anime:'★',sport:'◉',marques:'◐'};
+
+var SCLS = {promo:'s-promo',retail:'s-retail',limited:'s-limited',special:'s-special'};
+var SLBL = {promo:'PROMO',retail:'GRAND PUBLIC',limited:'LIMITED',special:'SPECIAL'};
+
+// ═══════════════════════════════════
+// TAGS
+// ═══════════════════════════════════
+var U_TAGS = {
+  film:    ['Blockbuster','Indie','Horror','Sci-fi','Action','Animation','Cult Classic','Press Only','Cinema Exclusive','Franchise'],
+  serie:   ['Network TV','Cable','Streaming','HBO','Netflix','MTV Era','Animated','Mini-series','Reboot'],
+  musique: ['Tour Merch','Album Release','Band Tee','Festival','Concert Exclusive','Bootleg','Official',
+            'Single Stitch','Double Stitch','Screen Print','Embroidered','All Over Print','Tie-Dye',
+            'Vintage','80s','90s','Y2K','Early 2000s','Faded','NWOT','With Tags',
+            'Black','White','Grey','Navy','Red','Multi-colour',
+            'Brockum','Winterland','Giant','Changes','Liquid Blue','TULTEX','Hanes',
+            'Tour Dates (Back)','Ed Banger','French Touch','Electronic','House','Techno'],
+  jeux:    ['Launch Day','Collector Edition','Console Bundle','Retro','Y2K','Limited Print','Esports','Nintendo','PlayStation','Xbox','Sega','PC Gaming'],
+  comics:  ['Marvel','DC','Dark Horse','Image Comics','Indie','First Print','Event Tie-in','Superhero'],
+  anime:   ['Shonen','Shojo','Seinen','Official','Fan-made','Jump Era','Studio Collab','Seasonal Drop'],
+  sport:   ['League Merch','Champion Year','World Cup','Olympics','Jersey Style','Starter','Vintage','Retired Number'],
+  marques: ['Collab','Limited Drop','Flagship','Streetwear','Skate','Sneaker Culture','Hype Drop','Archive Piece','Sample'],
+};
+
+// ═══════════════════════════════════
+// COOL CATS DEMO IMAGES
+// ═══════════════════════════════════
+var CC_IMGS = [
+  "imgs/APaQ0SQ21KSgha_mJNvS4FFZjx6ZSSivWMPLq5RXsVmcmnvzqC-Thv5gouzKW4gZQUzwRx_nWYioUSgj-nILZHYlVvKKdsnGEOmlSrQNV7DkAQ_JIVp_65ZTLzRpTyAyfMmlLu8rfgdQrcO5PNngKBNN3WNy97WZw0IMzSwfNWZhA9Dq1-2gAc9LvwXM=w1280.jpeg",
+  "imgs/APaQ0SQ3297K_KhF2d3JctDEwS7rUTt13RDVyiqdA1pxNndwGK-B2sz1-uz8LNVtPekLSdGW-CI-zB4KW8Vd_ZT7gwAhTechdJjCLQPO8nb8NKwYRViU8A5py9HdXe4ZrLOvqqA9tBvAWQ6fAgdFTsCfVa8qFc34srCNtsg24SJ8YFLofhazOrbXAY_Xlx0=w1280.jpeg",
+  "imgs/APaQ0SQ69uDaCptTT9qIrmILLYtQXdzpMEuGHQ5xSDmpFv3exWEyKjQ04OCFrwGVTF-VBIsX29hKU7xJgjpoYW5O4uUBgIy_UtsRhC3S9r9IoIXWgG-ywCNOWBjPnjM4Vgzz9qU_EOUBVJXLsWIzmxqJXwgi6TiA8nR1Zs70o1_yQxXvSyI1N2zUaOwm=w1280.jpeg",
+  "imgs/APaQ0SQGchFHdCMbiRsk0nciq1VG7D0okc0vX55PWUBcWQ7wIjeyDtRSj8zsLNjBmviL5FFASgbqXA7f-kzOwXyHzr45el4wNjt-jJejgpVcAue67yO3KAhnfdDedzckkjVAZ-MB3WerctMTnwgQCGS7S3AMVKSjxYOPomKEHJBAJNxa9M0Aek2OILUINDY=w1280.jpeg",
+  "imgs/APaQ0SQJYuP-BgzqKWAxezt93W424INhdouAX52dhuFdWGYpF8O4_QPAXqu5UED97ZIniUTebvTENcAXA5PIi6l74Yyj1DpTVGEWlIh5nGBRr9XyEepAbuaqlzq8EcmQbqSFvMlcAjGm9NRvd5AdhzbnQD_BSfB-ncblqJvfPMKSwh2JepTbyOSJm3CXgrA=w1280.jpeg",
+  "imgs/APaQ0SQRK_GYf2A6YzlNp8iTtfs0_nL12bMmCNL4LUh7i6Sgb68dOvHS1Qlfn6mgQuW5_KmWb3fSe5Qir5cKNmwZDZFHbYOQj_X2hsfWL7aaXwiRPN4OWzN4tx2v2j78OFRbZJTtyd53tFJXJKruk4NykBBd92CER4TdCMvQ_535uDn-FPPipgbqg5-7ZL4=w1280.jpeg",
+  "imgs/APaQ0SQbk0YPmEb-DaocMf79TCasoXfgjceTdKmEJNWYwjz-h31D9Y3yVxFrJD5grr6uFzrDz-hLZ-zmPf446YwQKtj2me7SEzLYg3mR148R5zSPIieT0Elkmyr-z3U7JOQ296aO92trlmKT2YrCXbEnN87WpJloFLpu0pw3PtYxmqavDghhIzoOXHYy=w1280.jpeg",
+  "imgs/APaQ0SQcf6Z8rzflTXIiHjrEdY9FyN9bgBB9_VzDNBpAEb1-CPkiD82NmEojeUnbJ6y3m45nYfQ8ejBv9byK6NekV04aycpFg-BLMMg_mhlHtrs0nWit0IgMT6oyYXMSfWeKK-wti541tNVn0tPCWTsUs2yxRpeSdvDrUJK8_UbLX3hk3BBAvb_M4ep6qBg=w1280.jpeg",
+  "imgs/APaQ0SQgi5HQ3lcOPGppDAdYnmhc9kg0Flw69syOS-gwoyE6UCsDzHSoNixm7OWSQJrDTFx5_MpTBPHvta3V2KeqiEnlc_C5_7Wl0h5YptxypkTTDtfcU3FXNhWiI-npMvIDTk4HxIyrvwGqbwyo5sZ3IqAiYXF68vHVdQg8mvbe7aH_yWZ-IOcnZBxiA7w=w1280.jpeg",
+  "imgs/APaQ0SQjClFqspEvSS98RbB-hy21sXQuPtoCDLWtcZQ_tzgrS4jIXMH5pQLEwE4FVFrNIwSqpy_BEHmlqjOxhdwCyQBYKxINvEd_R5M7OY8MsKJs9o7767eBqbWFXzcXFkLUGn30Y0F6EKBLg46w_ndpf0XpuUPTVfdDTIMcBb6U80XdvfrFIBxoKVQBDpk=w1280.jpeg",
+  "imgs/APaQ0SQkpjz5y2M_hbg3GK73rElC2lcA0efknnjEqvUMzBY3feGVsT_uwSJUWkptFgsuZ8bOP2my8grzW6Ik-hW_sBY7OxxCGMfzRFI8hLboKFSQPuOi0rMPjPFZ7kHoy26jZx0BsGJ4LR4K3dnZOXbPQbVE9-5ClYNLNc0n9JEGMVcuiN2CoKXgVtAV2N8=w1280.jpeg",
+  "imgs/APaQ0SQnG8NEDUjbp31-ez7yVlsz1duAjrm-_nw5F5QOmqnLwFq-KekhPiVymLYHqzs8um3KELpiR8RvSM4SItlZm5z2w73i-WwcEQHB7DbrGJtO7bYCxVxpKPKuiIY9mIZFiqH2fWWVmzRPcFS4mUNETAGRiep8eadoIgfxzujbCVn4ULvF0wcJ88glfRo=w1280.jpeg",
+  "imgs/APaQ0SQs3bYL6zBxoJrCwSYDZS3AT4xhujqDs9ANFqBJWLYFPwt6hpSffFDgRndBCfR2EK9TdQFv2BHwDiyMqSA1S09tcRe6Wc_iXPbV8izOItjJdXMLddZj_JRNACrjtfhHjU3UWZAeToYEMu33IoIJyiz79nsAV3GIg57tJdbsMwDAc6lFDEbr6OLIGuc=w1280.jpeg",
+  "imgs/APaQ0SQtjmuWAai3-HZWzSpkQf0N9_Q2JdXAzJp4dL4rOZjo_VSc5AQhsj9br261itYO4z2AKJ0XuZUihYQhDzwjDlSy-plP40h2J-Kny0vJbW6sHDgGhSJYPwW8txU1RPc2sDPPtPM57L5K0ia6QnR0FU0LZCx49d1RHp6ClegvjR3nePJJl9mGEL1HLwU=w1280.jpeg",
+  "imgs/APaQ0SQu9AmKfgDwEBPQSTK3u24BeLOh8qID5otg90aBkDWyMkQOQ1_ZL_XDpzbpJbNU_ZwKxmPnzTV1CQlIZiaWMTk6zvgU3x4lG18wWXRzAbkSElJFiCxOs3b03aZtb9BT2Q2dYRcSqmO7q8zC75K4wu2MqMSHKAy3v9BIHzwILi8TsK9I4qhZ1PLa-tE=w1280.jpeg",
+  "imgs/APaQ0SQw7eyiTtFhuaB0MmE-EQNUd4BF91MK1acuSwszKj33YcS32Us1fPg-nxfY-Wmbsh6CS33NRYu60SvHhpbGCDifVqF8bsIGzu1pGrvngXUDB8pQiLYOLdO4nLw3GU3E6ZIJjp8DmIt2ifTF4ZHZCp3uL6oTACpgBR3z2rUaDUvZmQj-K9uVsKWUd8c=w1280.jpeg",
+  "imgs/APaQ0SQxXrvlr6zIl0ui0RKmI4jJajkV9pv2pAbzl-LBJcVA_WJhosDTRkBL5Sn97aMnRryZVA_wFDIH7Mcj0uE2tgHvnSNiiuh_seWCmr1cVn3R8DAOHkkaCC-rgmgLyuACTeC5hMggXjZZzg8uNSZpSCW4u5IG7N9pWAt7wkgwaNf7Jfym6YSan9m-yMw=w1280.jpeg",
+  "imgs/APaQ0SQyKKhWYNVbz1RtVipe7ZtJkop1Zf2dPQ2PGiXLgRIs3Rv0b7Hk5jnrf-keSSvOZWKfUnfUkJYCrmcrcU5H525s8Biwe50pSk7WJkx7I9tw9J4wBriJKSfExQLo67Q77DCpCmFUYF8fc0d0QFTFhvmAG8OAS6u7yCy7Q4jigdgrniOmGdJ6pZusf60=w1280.jpeg",
+  "imgs/APaQ0SQzU-0xBJXA933-O6N93SYIOp8wx-uQrz9oRTk-reHY9ZCqdP_XvqDtXEg5dZP32hF0MgB3eGR67tOtDRktaUaJ6QVOWjZndvmaN4aYttoo7U9EAMqntE3ZPahqmwfH5iVLdX289evmwYfy87gdw_fNKAepnH87n-re_sUsahoaKq3xS_fUIKPrXS4=w1280.jpeg",
+  "imgs/APaQ0SR0UlMgyZXKTVzj7BjMVyIIq3t39JiQcm-EOUbrPZYsIzgCDajEl-tAtBr5q_OPhp4920J6_Nn8DX-jJ116BRA3bDLFI6KEdFS_RDCOkEzCbO4yLpFYLYXGlIvJDtju5m-ukNGUgG4xYxW8ylu7iIDCHPubcaQcMe4UzLggPPTYbNLMkLpjWytbSks=w1280.jpeg",
+  "imgs/APaQ0SR6LRfqsi74WhyELG5-S8qJvkhZi__EmFL2dV6aQiHTXqR3n8ykpJE2pCLiEHlkGV4YUKVXJDWerahq0Yvmu-lURmnhnjo8Vxh8hSw5ytRHyV2ZonYhN9yWoGWyuw86yj8bFGiVKvbtTmn1qCzJFfgc3OHnILniTd4qGQwJmhdd0OLQKPYiq_BHa4M=w1280.jpeg"
+];
+
+// ═══════════════════════════════════
+// INIT
+// ═══════════════════════════════════
+if (configured) {
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  document.getElementById('setup-notice').style.display = 'none';
+  (async function() {
+    var r = await sb.auth.getSession();
+    if (r.data.session) setUser(r.data.session.user);
+    sb.auth.onAuthStateChange(function(ev,sess){ sess ? setUser(sess.user) : clearUser(); });
+    await loadItems();
+  })();
+} else {
+  loadDemo();
+}
+
+// ═══════════════════════════════════
+// NAV
+// ═══════════════════════════════════
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(function(s){s.classList.remove('active');});
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active');});
+  var sec = document.getElementById('section-'+name);
+  if (sec) sec.classList.add('active');
+  if (name==='add') {
+    var gated=!currentUser && configured;
+    document.getElementById('add-gated').style.display = gated?'block':'none';
+    document.getElementById('add-form-wrap').style.display = gated?'none':'block';
+  }
+  if (name==='browse') { showBrowse(); }
+  if (name==='admin' && isAdmin()) { loadAdminPanel(); }
+  window.scrollTo(0,0);
+}
+
+// ═══════════════════════════════════
+// AUTH
+// ═══════════════════════════════════
+function toggleAuth(m){
+  document.getElementById('panel-login').style.display    = m==='login'?'block':'none';
+  document.getElementById('panel-register').style.display = m==='register'?'block':'none';
+}
+function setUser(u){
+  currentUser=u;
+  document.getElementById('user-bar').classList.add('show');
+  document.getElementById('user-email').textContent=u.email;
+  document.getElementById('nav-auth').textContent='COMPTE';
+  refreshAdminNav();
+}
+function clearUser(){
+  currentUser=null;
+  document.getElementById('user-bar').classList.remove('show');
+  document.getElementById('nav-auth').textContent='CONNEXION';
+  refreshAdminNav();
+}
+async function doLogin(e){
+  e.preventDefault();
+  if(!configured){showAlert('login-alert','Supabase non configuré','err');return;}
+  var r=await sb.auth.signInWithPassword({
+    email:document.getElementById('login-email').value,
+    password:document.getElementById('login-pass').value
+  });
+  if(r.error) showAlert('login-alert',r.error.message,'err');
+  else{showAlert('login-alert','BIENVENUE !','ok');setTimeout(function(){showSection('explore');},700);}
+}
+async function doRegister(e){
+  e.preventDefault();
+  if(!configured){showAlert('reg-alert','Supabase non configuré','err');return;}
+  var r=await sb.auth.signUp({
+    email:document.getElementById('reg-email').value,
+    password:document.getElementById('reg-pass').value
+  });
+  if(r.error) showAlert('reg-alert',r.error.message,'err');
+  else showAlert('reg-alert','VÉRIFIE TON EMAIL','ok');
+}
+async function logout(){await sb.auth.signOut();clearUser();showSection('explore');}
+
+// ═══════════════════════════════════
+// ITEMS
+// ═══════════════════════════════════
+async function loadItems(){
+  document.getElementById('merch-grid').innerHTML='<div class="loading-state">CHARGEMENT...</div>';
+  var r=await sb.from('merch_items').select('*').order('created_at',{ascending:false});
+  if(r.error){document.getElementById('merch-grid').innerHTML='<div class="loading-state">ERREUR</div>';return;}
+  allItems=r.data||[];
+  updateStats(); filterItems();
+}
+function updateStats(){
+  document.getElementById('stat-total').textContent=allItems.length;
+  var uq=new Set(allItems.map(function(i){return i.user_id;}).filter(Boolean)).size;
+  document.getElementById('stat-contrib').textContent=uq||'—';
+}
+
+// ═══════════════════════════════════
+// FILTER
+// ═══════════════════════════════════
+function setU(btn,u){
+  activeU=u;
+  document.querySelectorAll('.upill').forEach(function(p){p.classList.remove('active');});
+  btn.classList.add('active');
+  filterItems();
+}
+function filterItems(){
+  var q=document.getElementById('search-input').value.toLowerCase();
+  var type=document.getElementById('filter-type').value;
+  var status=document.getElementById('filter-status').value;
+  var sort=document.getElementById('sort-by').value;
+  var list=allItems.filter(function(item){
+    if(activeU && item.universe!==activeU) return false;
+    if(type && item.product_category!==type) return false;
+    if(status && item.status!==status) return false;
+    if(q){
+      var hay=[item.name,item.brand,item.description,item.product_type,item.tee_brand,(item.tags||[]).join(' ')].filter(Boolean).join(' ').toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+  if(sort==='year-desc') list.sort(function(a,b){return(b.year||0)-(a.year||0);});
+  else if(sort==='year-asc') list.sort(function(a,b){return(a.year||0)-(b.year||0);});
+  else if(sort==='name') list.sort(function(a,b){return(a.name||'').localeCompare(b.name||'');});
+  document.getElementById('result-count').textContent=list.length+' ITEMS';
+  renderGrid(list);
+}
+
+// ═══════════════════════════════════
+// RENDER
+// ═══════════════════════════════════
+function renderGrid(items){
+  var g=document.getElementById('merch-grid');
+  if(!items.length){g.innerHTML='<div class="empty-state"><p>AUCUN ITEM TROUVÉ</p></div>';return;}
+  g.innerHTML=items.map(function(item,i){
+    var tags=(item.tags||[]).slice(0,3);
+    var icon=U_ICON[item.universe]||'◈';
+    var img=item.image_url
+      ?'<img class="card-img" src="'+item.image_url+'" alt="" loading="lazy">'
+      :'<div class="card-placeholder">'+icon+'</div>';
+    var sty='animation-delay:'+(i%16*0.025)+'s';
+    var sc=SCLS[item.status]||'s-retail';
+    var sl=SLBL[item.status]||'';
+    return '<div class="merch-card" style="'+sty+'" onclick=\'openModal('+JSON.stringify(item).replace(/'/g,"&#39;")+')\'>'+
+      '<div class="card-img-wrap">'+img+
+      (sl?'<div class="card-status '+sc+'">'+sl+'</div>':'')+
+      '</div>'+
+      '<div class="card-body">'+
+      '<div class="card-universe">'+(U_LABEL[item.universe]||'')+(item.product_type?' · '+item.product_type.toUpperCase():'')+'</div>'+
+      '<div class="card-name">'+(item.name||'—')+'</div>'+
+      '<div class="card-brand">'+(item.brand||'')+'</div>'+
+      (tags.length?'<div class="card-tags">'+tags.map(function(t){return'<span class="tag">'+t+'</span>';}).join('')+'</div>':'')+
+      '</div>'+
+      '<div class="card-foot"><span class="card-year">'+(item.year||'—')+'</span>'+
+      '<span>'+(item.contributor_email?item.contributor_email.split('@')[0]:'anon')+'</span></div>'+
+      '</div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════
+// MODAL
+// ═══════════════════════════════════
+function openModal(item){
+  document.getElementById('modal-title').textContent=item.name||'—';
+  var tags=item.tags||[];
+  document.getElementById('modal-body').innerHTML=
+    (item.image_url?'<img class="modal-img" src="'+item.image_url+'" alt="">':'')+
+    '<div class="detail-row">'+
+    '<div class="detail-block"><label>UNIVERS</label><span style="color:var(--blue2)">'+(U_LABEL[item.universe]||'—')+'</span></div>'+
+    '<div class="detail-block"><label>STATUT</label><span>'+(SLBL[item.status]||'—')+'</span></div>'+
+    '<div class="detail-block"><label>ARTISTE / BRAND</label><span>'+(item.brand||'—')+'</span></div>'+
+    '<div class="detail-block"><label>TYPE</label><span>'+(item.product_type||'—')+'</span></div>'+
+    '<div class="detail-block"><label>ANNÉE</label><span>'+(item.year||'—')+'</span></div>'+
+    (item.tee_brand?'<div class="detail-block"><label>TEE MFR</label><span>'+item.tee_brand+'</span></div>':'')+
+    '</div>'+
+    (item.description?'<div class="detail-desc"><label>DESCRIPTION</label><p>'+item.description+'</p></div>':'')+
+    (tags.length?'<div class="modal-tags">'+tags.map(function(t){return'<span class="tag">'+t+'</span>';}).join('')+'</div>':'')+
+    '<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:6px;">'+
+    (item.link?'<a class="modal-link" href="'+item.link+'" target="_blank" rel="noopener">VOIR LA RÉFÉRENCE →</a>':'')+
+    '<span style="font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);">BY '+(item.contributor_email?item.contributor_email.split('@')[0].toUpperCase():'ANON')+'</span>'+
+    '</div>';
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal(e){if(e.target.id==='modal')document.getElementById('modal').classList.remove('open');}
+
+// ═══════════════════════════════════
+// FORM
+// ═══════════════════════════════════
+function onUniChange(){
+  var u=document.getElementById('item-universe').value;
+  var isTee=['T-shirt','Hoodie / Sweatshirt','Jacket'].includes(document.getElementById('item-type').value);
+  document.getElementById('tee-wrap').style.display=isTee?'block':'none';
+  buildTags(u);
+}
+document.getElementById('item-type').addEventListener('change',function(){
+  var isTee=['T-shirt','Hoodie / Sweatshirt','Jacket'].includes(this.value);
+  document.getElementById('tee-wrap').style.display=isTee?'block':'none';
+});
+function buildTags(u){
+  var box=document.getElementById('tags-box');
+  box.innerHTML='';
+  var tags=U_TAGS[u]||[];
+  var seen=new Set();
+  tags.forEach(function(t){
+    if(seen.has(t))return; seen.add(t);
+    var b=document.createElement('button');
+    b.type='button'; b.className='ttog'; b.textContent=t;
+    b.onclick=function(){b.classList.toggle('sel');syncTags();};
+    box.appendChild(b);
+  });
+}
+function syncTags(){
+  document.getElementById('sel-tags').value=JSON.stringify(
+    Array.from(document.querySelectorAll('.ttog.sel')).map(function(b){return b.textContent;})
+  );
+}
+function previewImg(input){
+  if(input.files[0]){
+    var r=new FileReader();
+    r.onload=function(e){var p=document.getElementById('upload-preview');p.src=e.target.result;p.style.display='block';};
+    r.readAsDataURL(input.files[0]);
+  }
+}
+async function submitMerch(e){
+  e.preventDefault();
+  if(!configured){showAlert('add-alert','Supabase non configuré','err');return;}
+  if(!currentUser){showAlert('add-alert','Connexion requise','err');return;}
+  var btn=e.target.querySelector('[type=submit]');
+  btn.textContent='UPLOAD EN COURS...'; btn.disabled=true;
+  var image_url=null;
+  var file=document.getElementById('img-input').files[0];
+  if(file){
+    var ext=file.name.split('.').pop();
+    var fn=Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+ext;
+    var ur=await sb.storage.from('merch-images').upload(fn,file);
+    if(!ur.error){var ud=sb.storage.from('merch-images').getPublicUrl(fn);image_url=ud.data.publicUrl;}
+  }
+  var tags=[];try{tags=JSON.parse(document.getElementById('sel-tags').value||'[]');}catch{}
+  var payload={
+    name:document.getElementById('item-name').value,
+    brand:document.getElementById('item-brand').value,
+    universe:document.getElementById('item-universe').value,
+    product_type:document.getElementById('item-type').value,
+    status:document.getElementById('item-status').value,
+    year:parseInt(document.getElementById('item-year').value)||null,
+    tee_brand:document.getElementById('item-tee').value||null,
+    description:document.getElementById('item-desc').value,
+    link:document.getElementById('item-link').value,
+    tags:tags, image_url:image_url,
+    user_id:currentUser.id, contributor_email:currentUser.email
+  };
+  var r=await sb.from('merch_items').insert([payload]);
+  btn.textContent='SOUMETTRE À L\'ARCHIVE →'; btn.disabled=false;
+  if(r.error){showAlert('add-alert','ERREUR: '+r.error.message,'err');}
+  else{
+    showAlert('add-alert','ITEM AJOUTÉ !','ok');
+    e.target.reset();
+    document.getElementById('upload-preview').style.display='none';
+    document.querySelectorAll('.ttog').forEach(function(b){b.classList.remove('sel');});
+    await loadItems();
+    setTimeout(function(){showSection('explore');},1200);
+  }
+}
+
+// ═══════════════════════════════════
+// MODAL — affichage multi-photos
+// ═══════════════════════════════════
+// Remplace ta fonction openModal existante par celle-ci :
+function openModal(item){
+  document.getElementById('modal-title').textContent=item.name||'—';
+  var tags=item.tags||[];
+
+  // Collecte toutes les images (nouvelle colonne + ancienne)
+  var imgs=[];
+  if(item.image_urls && item.image_urls.length) imgs=item.image_urls;
+  else if(item.image_url) imgs=[item.image_url];
+
+  // Galerie photos
+  var galleryHtml='';
+  if(imgs.length>1){
+    galleryHtml='<div style="margin-bottom:16px;">'+
+      '<img id="modal-main-img" class="modal-img" src="'+imgs[0]+'" alt="" style="cursor:default;">'+
+      '<div class="photo-grid" style="margin-top:8px;">'+
+      imgs.map(function(url,i){
+        return '<img class="photo-thumb'+(i===0?' active':'')+'" src="'+url+'" onclick="switchModalImg(this,\''+url+'\')">';
+      }).join('')+
+      '</div></div>';
+  } else if(imgs.length===1){
+    galleryHtml='<img class="modal-img" src="'+imgs[0]+'" alt="">';
+  }
+
+  // Bouton modifier (seulement si connecté et propriétaire)
+  var editBtn='';
+  if(currentUser && item.user_id===currentUser.id){
+    editBtn='<button class="btn-edit" onclick=\'openEditModal('+JSON.stringify(item).replace(/'/g,"&#39;")+')\'>✎ MODIFIER</button>';
+  }
+
+  document.getElementById('modal-body').innerHTML=
+    galleryHtml+
+    '<div class="detail-row">'+
+    '<div class="detail-block"><label>UNIVERS</label><span style="color:var(--blue2)">'+(U_LABEL[item.universe]||'—')+'</span></div>'+
+    '<div class="detail-block"><label>STATUT</label><span>'+(SLBL[item.status]||'—')+'</span></div>'+
+    '<div class="detail-block"><label>ARTISTE / BRAND</label><span>'+(item.brand||'—')+'</span></div>'+
+    '<div class="detail-block"><label>TYPE</label><span>'+(item.product_type||'—')+'</span></div>'+
+    '<div class="detail-block"><label>ANNÉE</label><span>'+(item.year||'—')+'</span></div>'+
+    (item.tee_brand?'<div class="detail-block"><label>TEE MFR</label><span>'+item.tee_brand+'</span></div>':'')+
+    '</div>'+
+    (item.description?'<div class="detail-desc"><label>DESCRIPTION</label><p>'+item.description+'</p></div>':'')+
+    (tags.length?'<div class="modal-tags">'+tags.map(function(t){return'<span class="tag">'+t+'</span>';}).join('')+'</div>':'')+
+    '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;">'+
+    (item.link?'<a class="modal-link" href="'+item.link+'" target="_blank" rel="noopener">VOIR LA RÉFÉRENCE →</a>':'')+
+    editBtn+
+    '<span style="font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);">BY '+(item.contributor_email?item.contributor_email.split('@')[0].toUpperCase():'ANON')+'</span>'+
+    '</div>';
+  document.getElementById('modal').classList.add('open');
+}
+
+function switchModalImg(thumb, url){
+  document.getElementById('modal-main-img').src=url;
+  document.querySelectorAll('.photo-thumb').forEach(function(t){t.classList.remove('active');});
+  thumb.classList.add('active');
+}
+
+// ═══════════════════════════════════
+// EDIT MODAL
+// ═══════════════════════════════════
+var editNewFiles=[];
+var editExistingUrls=[];
+var editItemData=null;
+
+function openEditModal(item){
+  editItemData=item;
+  editNewFiles=[];
+
+  // Pré-remplir le formulaire
+  document.getElementById('edit-item-id').value=item.id;
+  document.getElementById('edit-name').value=item.name||'';
+  document.getElementById('edit-brand').value=item.brand||'';
+  document.getElementById('edit-universe').value=item.universe||'musique';
+  document.getElementById('edit-status').value=item.status||'retail';
+  document.getElementById('edit-type').value=item.product_type||'';
+  document.getElementById('edit-year').value=item.year||'';
+  document.getElementById('edit-desc').value=item.description||'';
+  document.getElementById('edit-link').value=item.link||'';
+
+  // Photos existantes
+  editExistingUrls=item.image_urls&&item.image_urls.length ? item.image_urls : (item.image_url?[item.image_url]:[]);
+  renderEditPhotos();
+
+  document.getElementById('edit-new-previews').innerHTML='';
+  document.getElementById('edit-alert').className='alert';
+  document.getElementById('edit-modal').classList.add('open');
+  document.getElementById('modal').classList.remove('open');
+}
+
+function renderEditPhotos(){
+  var grid=document.getElementById('edit-photos-grid');
+  if(!editExistingUrls.length){grid.innerHTML='<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);">AUCUNE PHOTO</span>';return;}
+  grid.innerHTML=editExistingUrls.map(function(url,i){
+    return '<div class="photo-thumb-wrap">'+
+      '<img class="photo-thumb active" src="'+url+'">'+
+      '<button class="photo-del" onclick="removeExistingPhoto('+i+')" title="Supprimer">×</button>'+
+      '</div>';
+  }).join('');
+}
+
+function removeExistingPhoto(idx){
+  editExistingUrls.splice(idx,1);
+  renderEditPhotos();
+}
+
+function previewEditImgs(input){
+  var files=Array.from(input.files);
+  var total=editExistingUrls.length+editNewFiles.length+files.length;
+  if(total>5){showAlert('edit-alert','Maximum 5 photos par item','err');return;}
+  editNewFiles=editNewFiles.concat(files);
+  var prev=document.getElementById('edit-new-previews');
+  prev.innerHTML='';
+  editNewFiles.forEach(function(f,i){
+    var r=new FileReader();
+    r.onload=function(e){
+      var wrap=document.createElement('div');
+      wrap.className='photo-thumb-wrap';
+      wrap.innerHTML='<img class="photo-thumb active" src="'+e.target.result+'">'+
+        '<button class="photo-del" onclick="removeNewPhoto('+i+')" title="Supprimer">×</button>';
+      prev.appendChild(wrap);
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+function removeNewPhoto(idx){
+  editNewFiles.splice(idx,1);
+  var input=document.getElementById('edit-img-input');
+  input.value='';
+  var prev=document.getElementById('edit-new-previews');
+  prev.innerHTML='';
+  editNewFiles.forEach(function(f,i){
+    var r=new FileReader();
+    r.onload=function(e){
+      var wrap=document.createElement('div');
+      wrap.className='photo-thumb-wrap';
+      wrap.innerHTML='<img class="photo-thumb active" src="'+e.target.result+'">'+
+        '<button class="photo-del" onclick="removeNewPhoto('+i+')" title="Supprimer">×</button>';
+      prev.appendChild(wrap);
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+function closeEditModal(e){
+  if(e.target.id==='edit-modal') document.getElementById('edit-modal').classList.remove('open');
+}
+
+async function saveEdit(e){
+  e.preventDefault();
+  if(!configured||!currentUser){showAlert('edit-alert','Non connecté','err');return;}
+  var btn=e.target.querySelector('[type=submit]');
+  btn.textContent='SAUVEGARDE...'; btn.disabled=true;
+
+  // Upload nouvelles photos
+  var newUrls=[];
+  for(var i=0;i<editNewFiles.length;i++){
+    var f=editNewFiles[i];
+    var ext=f.name.split('.').pop();
+    var fn=Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+ext;
+    var ur=await sb.storage.from('merch-images').upload(fn,f);
+    if(!ur.error){
+      var ud=sb.storage.from('merch-images').getPublicUrl(fn);
+      newUrls.push(ud.data.publicUrl);
+    }
+  }
+
+  var allUrls=editExistingUrls.concat(newUrls);
+
+  var payload={
+    name:document.getElementById('edit-name').value,
+    brand:document.getElementById('edit-brand').value,
+    universe:document.getElementById('edit-universe').value,
+    status:document.getElementById('edit-status').value,
+    product_type:document.getElementById('edit-type').value,
+    year:parseInt(document.getElementById('edit-year').value)||null,
+    description:document.getElementById('edit-desc').value,
+    link:document.getElementById('edit-link').value,
+    image_urls:allUrls,
+    image_url:allUrls[0]||null
+  };
+
+  var id=document.getElementById('edit-item-id').value;
+  var r=await sb.from('merch_items').update(payload).eq('id',id).eq('user_id',currentUser.id);
+
+  btn.textContent='SAUVEGARDER →'; btn.disabled=false;
+
+  if(r.error){showAlert('edit-alert','ERREUR: '+r.error.message,'err');}
+  else{
+    showAlert('edit-alert','SAUVEGARDÉ !','ok');
+    await loadItems();
+    setTimeout(function(){document.getElementById('edit-modal').classList.remove('open');},1000);
+  }
+}
+
+async function deleteItem(){
+  if(!confirm('Supprimer cet item ? Cette action est irréversible.')) return;
+  if(!configured||!currentUser) return;
+  var id=document.getElementById('edit-item-id').value;
+  var r=await sb.from('merch_items').delete().eq('id',id).eq('user_id',currentUser.id);
+  if(r.error){showAlert('edit-alert','ERREUR: '+r.error.message,'err');}
+  else{
+    document.getElementById('edit-modal').classList.remove('open');
+    await loadItems();
+  }
+}
+
+// ═══════════════════════════════════
+// UTILS
+// ═══════════════════════════════════
+function showAlert(id,msg,type){
+  var el=document.getElementById(id);
+  if(!el)return;
+  el.textContent=msg; el.className='alert show alert-'+type;
+  setTimeout(function(){el.classList.remove('show');},5000);
+}
+
+// ═══════════════════════════════════
+// ADMIN
+// ═══════════════════════════════════
+var ADMIN_EMAIL = 'archivingmerch@gmail.com';
+
+function isAdmin() {
+  return currentUser && currentUser.email === ADMIN_EMAIL;
+}
+
+function refreshAdminNav() {
+  var btn = document.getElementById('nav-admin');
+  if (btn) btn.style.display = isAdmin() ? 'inline-flex' : 'none';
+}
+
+async function loadAdminPanel() {
+  if (!isAdmin() || !configured) return;
+  await loadAdminGroups();
+  await loadAdminItems();
+}
+
+async function loadAdminGroups() {
+  var el = document.getElementById('admin-groups-pending');
+  if (!el) return;
+  var r = await sb.from('groups').select('*').eq('approved', false).order('created_at', {ascending:false});
+  if (!r.data || !r.data.length) {
+    el.innerHTML = '<div class="admin-empty">AUCUN GROUPE EN ATTENTE ✓</div>'; return;
+  }
+  el.innerHTML = '<table class="admin-table"><thead><tr>'+
+    '<th>NOM</th><th>UNIVERS</th><th>NIVEAU</th><th>CRÉÉ PAR</th><th>DATE</th><th>ACTION</th>'+
+    '</tr></thead><tbody>'+
+    r.data.map(function(g){
+      return '<tr>'+
+        '<td><strong>'+g.name+'</strong>'+(g.description?'<br><span style="font-size:11px;color:var(--muted)">'+g.description+'</span>':'')+'</td>'+
+        '<td><span class="tag">'+(g.universe||'—')+'</span></td>'+
+        '<td><span class="tag">'+(g.level===1?'ARTISTE/SAGA':'ALBUM/ARC')+'</span></td>'+
+        '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted)">'+(g.created_by||'—')+'</td>'+
+        '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted)">'+(g.created_at?g.created_at.slice(0,10):'—')+'</td>'+
+        '<td>'+
+        '<button class="btn-approve" onclick="approveGroup(\''+g.id+'\')">APPROUVER</button>'+
+        '<button class="btn-reject" onclick="rejectGroup(\''+g.id+'\')">REFUSER</button>'+
+        '</td></tr>';
+    }).join('')+
+    '</tbody></table>';
+}
+
+async function approveGroup(id) {
+  await sb.from('groups').update({approved:true}).eq('id',id);
+  await loadAdminGroups();
+  allGroups = [];
+  await loadGroups();
+}
+
+async function rejectGroup(id) {
+  if (!confirm('Supprimer ce groupe ?')) return;
+  await sb.from('groups').delete().eq('id',id);
+  await loadAdminGroups();
+}
+
+var adminAllItems = [];
+async function loadAdminItems() {
+  var el = document.getElementById('admin-items-table');
+  if (!el) return;
+  var r = await sb.from('merch_items').select('id,name,brand,universe,year,contributor_email').order('created_at',{ascending:false});
+  adminAllItems = r.data || [];
+  renderAdminItems(adminAllItems);
+}
+
+function adminFilterItems() {
+  var q = document.getElementById('admin-search').value.toLowerCase();
+  renderAdminItems(adminAllItems.filter(function(i){
+    return (i.name||'').toLowerCase().includes(q) || (i.brand||'').toLowerCase().includes(q);
+  }));
+}
+
+function renderAdminItems(items) {
+  var el = document.getElementById('admin-items-table');
+  if (!items.length) { el.innerHTML='<div class="admin-empty">AUCUN RÉSULTAT</div>'; return; }
+  el.innerHTML = '<table class="admin-table"><thead><tr>'+
+    '<th>NOM</th><th>ARTISTE</th><th>UNIVERS</th><th>ANNÉE</th><th>CONTRIBUTEUR</th><th>ACTION</th>'+
+    '</tr></thead><tbody>'+
+    items.slice(0,100).map(function(item){
+      return '<tr>'+
+        '<td>'+item.name+'</td>'+
+        '<td style="color:var(--muted)">'+( item.brand||'—')+'</td>'+
+        '<td><span class="tag">'+(item.universe||'—')+'</span></td>'+
+        '<td style="color:var(--blue2);font-family:\'DM Mono\',monospace;font-size:11px">'+(item.year||'—')+'</td>'+
+        '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted)">'+(item.contributor_email?item.contributor_email.split('@')[0]:'anon')+'</td>'+
+        '<td><button class="btn-reject" onclick="adminDeleteItem(\''+item.id+'\')">SUPPRIMER</button></td>'+
+        '</tr>';
+    }).join('')+
+    '</tbody></table>';
+}
+
+async function adminDeleteItem(id) {
+  if (!confirm('Supprimer définitivement cet item ?')) return;
+  await sb.from('merch_items').delete().eq('id', id);
+  await loadItems();
+  await loadAdminItems();
+}
+
+// ═══════════════════════════════════
+// GROUPS
+// ═══════════════════════════════════
+var allGroups = [];
+var browseState = { universe: null, parentGroup: null }; // navigation state
+
+async function loadGroups() {
+  if (!configured || allGroups.length) return;
+  var r = await sb.from('groups').select('*').eq('approved', true).order('name');
+  allGroups = r.data || [];
+}
+
+// Affiche les univers en grand
+async function showBrowse() {
+  browseState = { universe: null, parentGroup: null };
+  await loadGroups();
+  var el = document.getElementById('browse-content');
+
+  var universeList = [
+    {key:'film',    label:'FILM',           icon:'◈'},
+    {key:'serie',   label:'SÉRIE',          icon:'▶'},
+    {key:'musique', label:'MUSIQUE',        icon:'♫'},
+    {key:'jeux',    label:'JEUX VIDÉO',     icon:'⊕'},
+    {key:'comics',  label:'COMICS & BD',    icon:'✦'},
+    {key:'anime',   label:'ANIME & MANGA',  icon:'★'},
+    {key:'sport',   label:'SPORT',          icon:'◉'},
+    {key:'marques', label:'MARQUES',        icon:'◐'},
+  ];
+
+  el.innerHTML =
+    '<div class="sec-head"><h2>UNIVERS</h2><span>NAVIGUER PAR CATÉGORIE</span></div>'+
+    '<div class="groups-grid">'+
+    universeList.map(function(u){
+      var count = allGroups.filter(function(g){ return g.universe===u.key && g.level===1; }).length;
+      var itemCount = allItems.filter(function(i){ return i.universe===u.key; }).length;
+      return '<div class="group-card" onclick="browseUniverse(\''+u.key+'\')">'+
+        '<span class="group-card-icon">'+u.icon+'</span>'+
+        '<div class="group-card-name">'+u.label+'</div>'+
+        '<div class="group-card-meta">'+count+' groupe'+(count>1?'s':'')+' · '+itemCount+' items</div>'+
+        '</div>';
+    }).join('')+
+    '</div>';
+}
+
+// Univers → liste des artistes/sagas (level 1)
+async function browseUniverse(universe) {
+  browseState = { universe: universe, parentGroup: null };
+  await loadGroups();
+  var groups = allGroups.filter(function(g){ return g.universe===universe && g.level===1; });
+  var uLabel = U_LABEL[universe] || universe.toUpperCase();
+  var uIcon  = U_ICON[universe] || '◈';
+  var items  = allItems.filter(function(i){ return i.universe===universe; });
+
+  var el = document.getElementById('browse-content');
+  el.innerHTML =
+    '<div class="browse-header">'+
+    '<button class="browse-back" onclick="showBrowse()">← UNIVERS</button>'+
+    '<div class="browse-breadcrumb"><span>'+uIcon+' '+uLabel+'</span></div>'+
+    '</div>'+
+    '<div class="groups-grid">'+
+    groups.map(function(g){
+      var subCount = allGroups.filter(function(s){ return s.parent_id===g.id; }).length;
+      var imgStyle = g.image_url ? 'style="background-image:url('+g.image_url+');background-size:cover;background-position:center"' : '';
+      return '<div class="group-card" onclick="browseGroup(\''+g.id+'\')" '+imgStyle+'>'+
+        (g.image_url?'<div style="position:absolute;inset:0;background:rgba(4,6,15,.6)"></div><div style="position:relative">':'') +
+        '<div class="group-card-name">'+g.name+'</div>'+
+        '<div class="group-card-meta">'+(g.description||'')+
+        (subCount?' · '+subCount+' sous-groupe'+(subCount>1?'s':''):'')+'</div>'+
+        (g.image_url?'</div>':'')+
+        '<div class="group-card-count" style="position:relative">'+subCount+' ↓</div>'+
+        '</div>';
+    }).join('')+
+    // + carte "créer un groupe" si connecté
+    (currentUser ?
+      '<div class="group-add-card" onclick="openCreateGroup(\''+universe+'\',\'\',1)">'+
+      '<span style="font-size:22px;margin-bottom:6px">+</span>'+
+      '<span>CRÉER UN GROUPE</span></div>' : '')+
+    '</div>'+
+    // Items sans groupe dans cet univers
+    (items.length ?
+      '<div style="margin-top:36px">'+
+      '<div class="sec-head"><h2>TOUS LES ITEMS</h2><span>'+items.length+' ITEMS DANS '+uLabel+'</span></div>'+
+      '<div class="merch-grid" id="browse-items-grid"></div></div>' : '');
+
+  if (items.length) renderBrowseGrid(items);
+}
+
+// Groupe → sous-groupes (level 2) + items liés
+async function browseGroup(groupId) {
+  await loadGroups();
+  var group = allGroups.find(function(g){ return g.id===groupId; });
+  if (!group) return;
+  browseState = { universe: group.universe, parentGroup: group };
+
+  var subGroups = allGroups.filter(function(g){ return g.parent_id===groupId; });
+  var uLabel = U_LABEL[group.universe] || group.universe.toUpperCase();
+
+  // Charger les items liés à ce groupe
+  var linkedItems = [];
+  if (configured) {
+    var r = await sb.from('item_groups').select('item_id').eq('group_id', groupId);
+    if (r.data && r.data.length) {
+      var ids = r.data.map(function(x){ return x.item_id; });
+      linkedItems = allItems.filter(function(i){ return ids.includes(i.id); });
+    }
+  }
+
+  var el = document.getElementById('browse-content');
+  el.innerHTML =
+    '<div class="browse-header">'+
+    '<button class="browse-back" onclick="browseUniverse(\''+group.universe+'\')">← '+uLabel+'</button>'+
+    '<div class="browse-breadcrumb"><span>'+uLabel+'</span> / <span>'+group.name+'</span></div>'+
+    '</div>'+
+    (subGroups.length || currentUser ?
+      '<div class="groups-grid">'+
+      subGroups.map(function(s){
+        return '<div class="group-card" onclick="browseSubGroup(\''+s.id+'\',\''+groupId+'\')">'+
+          '<div class="group-card-name">'+s.name+'</div>'+
+          '<div class="group-card-meta">'+(s.description||'')+'</div>'+
+          '</div>';
+      }).join('')+
+      (currentUser ?
+        '<div class="group-add-card" onclick="openCreateGroup(\''+group.universe+'\',\''+groupId+'\',2)">'+
+        '<span style="font-size:22px;margin-bottom:6px">+</span>'+
+        '<span>CRÉER UN SOUS-GROUPE</span></div>' : '')+
+      '</div>' : '')+
+    '<div style="margin-top:32px">'+
+    '<div class="sec-head"><h2>'+group.name.toUpperCase()+'</h2>'+
+    '<span>'+(linkedItems.length||0)+' ITEMS</span></div>'+
+    (linkedItems.length ?
+      '<div class="merch-grid" id="browse-items-grid"></div>' :
+      '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p>AUCUN ITEM ASSOCIÉ À CE GROUPE</p>'+
+      '<p style="font-size:12px;font-family:\'DM Mono\',monospace;color:var(--muted);margin-top:10px;letter-spacing:2px">Les items peuvent être rattachés à un groupe lors de la soumission</p></div>')+
+    '</div>';
+
+  if (linkedItems.length) renderBrowseGrid(linkedItems);
+}
+
+// Sous-groupe → items
+async function browseSubGroup(subGroupId, parentGroupId) {
+  await loadGroups();
+  var subGroup = allGroups.find(function(g){ return g.id===subGroupId; });
+  var parent   = allGroups.find(function(g){ return g.id===parentGroupId; });
+  if (!subGroup) return;
+
+  var uLabel = U_LABEL[subGroup.universe] || subGroup.universe.toUpperCase();
+  var linkedItems = [];
+  if (configured) {
+    var r = await sb.from('item_groups').select('item_id').eq('group_id', subGroupId);
+    if (r.data && r.data.length) {
+      var ids = r.data.map(function(x){ return x.item_id; });
+      linkedItems = allItems.filter(function(i){ return ids.includes(i.id); });
+    }
+  }
+
+  var el = document.getElementById('browse-content');
+  el.innerHTML =
+    '<div class="browse-header">'+
+    '<button class="browse-back" onclick="browseGroup(\''+parentGroupId+'\')">← '+(parent?parent.name:uLabel)+'</button>'+
+    '<div class="browse-breadcrumb"><span>'+uLabel+'</span> / <span>'+(parent?parent.name:'')+'</span> / <span>'+subGroup.name+'</span></div>'+
+    '</div>'+
+    '<div style="margin-top:8px">'+
+    '<div class="sec-head"><h2>'+subGroup.name.toUpperCase()+'</h2>'+
+    '<span>'+(linkedItems.length||0)+' ITEMS</span></div>'+
+    (linkedItems.length ?
+      '<div class="merch-grid" id="browse-items-grid"></div>' :
+      '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p>AUCUN ITEM DANS CET ARC/ALBUM</p></div>')+
+    '</div>';
+
+  if (linkedItems.length) renderBrowseGrid(linkedItems);
+}
+
+function renderBrowseGrid(items) {
+  var g = document.getElementById('browse-items-grid');
+  if (!g) return;
+  g.innerHTML = items.map(function(item, i){
+    var icon = U_ICON[item.universe]||'◈';
+    var img = item.image_url
+      ? '<img class="card-img" src="'+item.image_url+'" alt="" loading="lazy">'
+      : '<div class="card-placeholder">'+icon+'</div>';
+    var sty = 'animation-delay:'+(i%16*0.025)+'s';
+    var sc = SCLS[item.status]||'s-retail';
+    var sl = SLBL[item.status]||'';
+    return '<div class="merch-card" style="'+sty+'" onclick=\'openModal('+JSON.stringify(item).replace(/'/g,"&#39;")+')\'>'+
+      '<div class="card-img-wrap">'+img+
+      (sl?'<div class="card-status '+sc+'">'+sl+'</div>':'')+
+      '</div><div class="card-body">'+
+      '<div class="card-universe">'+(U_LABEL[item.universe]||'')+(item.product_type?' · '+item.product_type.toUpperCase():'')+'</div>'+
+      '<div class="card-name">'+(item.name||'—')+'</div>'+
+      '<div class="card-brand">'+(item.brand||'')+'</div>'+
+      '</div><div class="card-foot"><span class="card-year">'+(item.year||'—')+'</span>'+
+      '<span>'+(item.contributor_email?item.contributor_email.split('@')[0]:'anon')+'</span></div>'+
+      '</div>';
+  }).join('');
+}
+
+// CREATE GROUP
+function openCreateGroup(universe, parentId, level) {
+  if (!currentUser) { showSection('auth'); return; }
+  document.getElementById('group-parent-id').value = parentId || '';
+  document.getElementById('group-universe').value = universe;
+  document.getElementById('group-level').value = level || 1;
+  var title = level===2 ? 'CRÉER UN SOUS-GROUPE (ALBUM / ARC)' : 'CRÉER UN GROUPE (ARTISTE / SAGA)';
+  document.getElementById('create-group-title').textContent = title;
+  document.getElementById('group-name').value = '';
+  document.getElementById('group-desc').value = '';
+  document.getElementById('group-img').value = '';
+  document.getElementById('group-alert').className = 'alert';
+  document.getElementById('create-group-modal').classList.add('open');
+}
+
+function closeCreateGroupModal(e) {
+  if (e.target.id==='create-group-modal') document.getElementById('create-group-modal').classList.remove('open');
+}
+
+async function submitGroup(e) {
+  e.preventDefault();
+  if (!configured || !currentUser) { showAlert('group-alert','Connexion requise','err'); return; }
+  var btn = e.target.querySelector('[type=submit]');
+  btn.textContent = 'ENVOI...'; btn.disabled = true;
+
+  var payload = {
+    name: document.getElementById('group-name').value,
+    description: document.getElementById('group-desc').value,
+    universe: document.getElementById('group-universe').value,
+    parent_id: document.getElementById('group-parent-id').value || null,
+    level: parseInt(document.getElementById('group-level').value) || 1,
+    image_url: document.getElementById('group-img').value || null,
+    created_by: currentUser.email,
+    approved: false  // en attente de validation admin
+  };
+
+  var r = await sb.from('groups').insert([payload]);
+  btn.textContent = 'SOUMETTRE LE GROUPE →'; btn.disabled = false;
+  if (r.error) { showAlert('group-alert','ERREUR: '+r.error.message,'err'); }
+  else {
+    showAlert('group-alert','GROUPE SOUMIS — EN ATTENTE DE VALIDATION ✓','ok');
+    setTimeout(function(){ document.getElementById('create-group-modal').classList.remove('open'); }, 1800);
+  }
+}
+
+  // ── RADIO PLAYER ──
+const CHANNELS = [
+  { name: 'ED BANGER RADIO', sub: 'French touch · Electro', ytId: 'IQ8v-sSZKt4' },
+  { name: 'CLUB TO CLUB',    sub: 'Techno · Electronic',    ytId: 'lTRiuFIWV54' },
+  { name: 'LOFI ARCHIVE',    sub: 'Chill beats · Ambient',  ytId: 'jfKfPfyJRdk' },
+  { name: 'ROCK RADIO', sub: 'Rock · Classic · Live', ytId: 'Nt27aBceerI' },
+];
+let radioPlaying = false, currentChannel = 0, channelOpen = false, ytPlayer = null, ytApiReady = false;
+
+function initYT() {
+  if (document.getElementById('yt-api-script')) return;
+  const s = document.createElement('script');
+  s.id = 'yt-api-script';
+  s.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+}
+window.onYouTubeIframeAPIReady = function() {
+  ytApiReady = true;
+  if (radioPlaying) loadChannel(currentChannel);
+};
+function loadChannel(idx) {
+  const ch = CHANNELS[idx];
+  const wrap = document.getElementById('radio-iframe-wrap');
+  wrap.innerHTML = '';
+  if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
+  const div = document.createElement('div');
+  div.id = 'yt-player-inner';
+  wrap.appendChild(div);
+  ytPlayer = new YT.Player('yt-player-inner', {
+    height: '1', width: '1', videoId: ch.ytId,
+    playerVars: { autoplay: 1, controls: 0, loop: 1, playlist: ch.ytId, mute: 0, start: Math.floor(Math.random()*300) },
+    events: {
+      onReady: (e) => { e.target.setVolume(80); e.target.playVideo(); }
+    }
+  });
+}
+function toggleRadio() {
+  if (!channelOpen && !radioPlaying) { openChannelPicker(); return; }
+  if (channelOpen) { closeChannelPicker(); return; }
+  radioPlaying = !radioPlaying;
+  updatePlayerUI();
+  if (radioPlaying) { initYT(); if (ytApiReady) loadChannel(currentChannel); }
+  else { if (ytPlayer) { try { ytPlayer.stopVideo(); } catch(e){} } }
+}
+function openChannelPicker() {
+  channelOpen = true;
+  document.getElementById('radio-channels').classList.add('open');
+  document.getElementById('radio-caret').textContent = '▼';
+}
+function closeChannelPicker() {
+  channelOpen = false;
+  document.getElementById('radio-channels').classList.remove('open');
+  document.getElementById('radio-caret').textContent = '▲';
+}
+function selectChannel(idx) {
+  currentChannel = idx;
+  document.querySelectorAll('.radio-ch').forEach((el, i) => el.classList.toggle('active', i === idx));
+  closeChannelPicker();
+  radioPlaying = true;
+  updatePlayerUI();
+  initYT();
+  if (ytApiReady) loadChannel(idx);
+}
+function updatePlayerUI() {
+  const ch = CHANNELS[currentChannel];
+  document.getElementById('radio-ch-name').textContent = radioPlaying ? ch.name : 'RADIO';
+  document.getElementById('radio-ch-sub').textContent = radioPlaying ? ch.sub : 'SELECT A CHANNEL';
+  document.getElementById('radio-btn').classList.toggle('playing', radioPlaying);
+}
+</script>
+</body>
+</html>
