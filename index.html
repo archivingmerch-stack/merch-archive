@@ -718,79 +718,6 @@
 }
 .btn-danger:hover { background:#aa3333; color:#fff; }
 
-/* ── CAROUSEL ── */
-.carousel-section { margin-bottom: 36px; }
-.carousel-title {
-  font-family:'Bebas Neue',sans-serif; font-size:18px;
-  letter-spacing:4px; color:var(--white); margin-bottom:12px;
-  display:flex; align-items:center; gap:12px; padding-bottom:10px;
-  border-bottom:1px solid var(--border);
-}
-.carousel-title span {
-  font-family:'DM Mono',monospace; font-size:9px;
-  letter-spacing:2px; color:var(--muted);
-}
-.carousel-track {
-  display:flex; gap:1px; overflow-x:auto;
-  scroll-behavior:smooth; scrollbar-width:none; -ms-overflow-style:none;
-  background:var(--border);
-}
-.carousel-track::-webkit-scrollbar { display:none; }
-.carousel-item {
-  flex-shrink:0; width:170px; cursor:pointer;
-  background:var(--ink); transition:background .15s; position:relative;
-}
-.carousel-item:hover { background:var(--card); }
-.carousel-item::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:2px;
-  background:var(--blue); transform:scaleX(0);
-  transform-origin:left; transition:transform .2s;
-}
-.carousel-item:hover::before { transform:scaleX(1); }
-.carousel-img { width:100%; aspect-ratio:1; object-fit:cover; display:block; background:var(--panel); }
-.carousel-placeholder {
-  width:100%; aspect-ratio:1; background:var(--panel);
-  display:flex; align-items:center; justify-content:center;
-  font-family:'Bebas Neue',sans-serif; font-size:32px; color:var(--border);
-}
-.carousel-info { padding:9px 12px; }
-.carousel-name {
-  font-family:'Bebas Neue',sans-serif; font-size:13px;
-  letter-spacing:2px; color:var(--white); line-height:1.2;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.carousel-sub {
-  font-family:'DM Mono',monospace; font-size:8px;
-  letter-spacing:1px; color:var(--muted); text-transform:uppercase;
-  margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-}
-.carousel-group {
-  flex-shrink:0; width:150px; cursor:pointer;
-  background:var(--panel); border-right:1px solid var(--border);
-  transition:all .15s; position:relative; overflow:hidden;
-  min-height:100px; display:flex; flex-direction:column;
-  align-items:flex-start; justify-content:flex-end; padding:12px;
-}
-.carousel-group:hover { background:var(--card); }
-.carousel-group:hover::before { transform:scaleX(1); }
-.carousel-group::before {
-  content:''; position:absolute; top:0; left:0; right:0; height:2px;
-  background:var(--blue); transform:scaleX(0); transform-origin:left; transition:transform .2s;
-}
-.carousel-group-bg {
-  position:absolute; inset:0; width:100%; height:100%;
-  object-fit:cover; opacity:.3;
-}
-.carousel-group-name {
-  font-family:'Bebas Neue',sans-serif; font-size:15px;
-  letter-spacing:2px; color:var(--white); position:relative; z-index:1;
-}
-.carousel-group-uni {
-  font-family:'DM Mono',monospace; font-size:8px;
-  letter-spacing:2px; color:var(--blue2); text-transform:uppercase;
-  position:relative; z-index:1; margin-top:2px;
-}
-
 /* ── GROUPS / BROWSE ── */
 .browse-header {
   display:flex; align-items:center; gap:14px;
@@ -1028,18 +955,6 @@
       </select>
     </div>
 
-    <!-- CARROUSEL — visible quand TOUS est sélectionné -->
-    <div id="carousel-wrap" style="margin-bottom:32px;">
-      <div class="carousel-section" id="carousel-groups-section">
-        <div class="carousel-title">GROUPES RÉCENTS <span>NOUVELLEMENT AJOUTÉS</span></div>
-        <div class="carousel-track" id="carousel-groups"></div>
-      </div>
-      <div class="carousel-section" style="margin-top:28px;" id="carousel-items-section">
-        <div class="carousel-title">ITEMS RÉCENTS <span>DERNIÈRES SOUMISSIONS</span></div>
-        <div class="carousel-track" id="carousel-items"></div>
-      </div>
-    </div>
-
     <div class="merch-grid" id="merch-grid">
       <div class="loading-state">CHARGEMENT...</div>
     </div>
@@ -1213,16 +1128,8 @@
                 <div class="tags-box" id="tags-box"></div>
                 <input type="hidden" id="sel-tags" value="[]">
               </div>
-              <div class="fgroup form-full" id="group-select-wrap" style="display:none">
-                <label>RATTACHER À UN GROUPE <small style="color:var(--border);font-size:9px;letter-spacing:1px;">(optionnel)</small></label>
-                <select id="item-group-id">
-                  <option value="">— Aucun groupe —</option>
-                </select>
-                <input type="hidden" id="item-group-id-forced" value="">
-              </div>
             </div>
             <button type="submit" class="btn-primary" style="margin-top:20px;">SOUMETTRE À L'ARCHIVE →</button>
-            <input type="hidden" id="add-return-group" value="">
           </form>
         </div>
       </div>
@@ -1546,8 +1453,6 @@ if (configured) {
     if (r.data.session) setUser(r.data.session.user);
     sb.auth.onAuthStateChange(function(ev,sess){ sess ? setUser(sess.user) : clearUser(); });
     await loadItems();
-    await loadGroups();
-    renderCarouselGroups();
   })();
 } else {
   loadDemo();
@@ -1684,7 +1589,6 @@ async function loadItems(){
   if(r.error){document.getElementById('merch-grid').innerHTML='<div class="loading-state">ERREUR</div>';return;}
   allItems=r.data||[];
   updateStats(); filterItems();
-  renderCarousels();
 }
 function updateStats(){
   document.getElementById('stat-total').textContent=allItems.length;
@@ -1700,9 +1604,6 @@ function setU(btn,u){
   document.querySelectorAll('.upill').forEach(function(p){p.classList.remove('active');});
   btn.classList.add('active');
   filterItems();
-  // Carrousel : visible seulement sur TOUS
-  var cw = document.getElementById('carousel-wrap');
-  if (cw) cw.style.display = u ? 'none' : 'block';
   // Bandeau créer un groupe
   var cta = document.getElementById('universe-cta');
   if (cta) {
@@ -1742,55 +1643,7 @@ function filterItems(){
 }
 
 // ═══════════════════════════════════
-// CAROUSEL
-// ═══════════════════════════════════
-function renderCarousels() {
-  renderCarouselGroups();
-  renderCarouselItems();
-}
-
-function renderCarouselGroups() {
-  var el = document.getElementById('carousel-groups');
-  var sec = document.getElementById('carousel-groups-section');
-  if (!el) return;
-  // Trier par created_at desc — les groupes les plus récents d'abord
-  var groups = allGroups.slice().sort(function(a,b){
-    return new Date(b.created_at||0) - new Date(a.created_at||0);
-  }).slice(0, 20);
-  if (!groups.length) { if(sec) sec.style.display='none'; return; }
-  if(sec) sec.style.display='block';
-  el.innerHTML = groups.map(function(g){
-    var uLabel = U_LABEL[g.universe]||g.universe||'';
-    return '<div class="carousel-group" onclick="showSection(\'browse\');browseGroup(\''+g.id+'\')">'+
-      (g.image_url ? '<img class="carousel-group-bg" src="'+g.image_url+'" alt="">' : '')+
-      '<div class="carousel-group-name">'+g.name+'</div>'+
-      '<div class="carousel-group-uni">'+uLabel+'</div>'+
-      '</div>';
-  }).join('');
-}
-
-function renderCarouselItems() {
-  var el = document.getElementById('carousel-items');
-  var sec = document.getElementById('carousel-items-section');
-  if (!el) return;
-  var items = allItems.slice(0, 20);
-  if (!items.length) { if(sec) sec.style.display='none'; return; }
-  if(sec) sec.style.display='block';
-  el.innerHTML = items.map(function(item){
-    var icon = U_ICON[item.universe]||'◈';
-    return '<div class="carousel-item" onclick=\'openModal('+JSON.stringify(item).replace(/'/g,"&#39;")+')\'>'+
-      (item.image_url
-        ? '<img class="carousel-img" src="'+item.image_url+'" alt="" loading="lazy">'
-        : '<div class="carousel-placeholder">'+icon+'</div>')+
-      '<div class="carousel-info">'+
-      '<div class="carousel-name">'+(item.name||'—')+'</div>'+
-      '<div class="carousel-sub">'+(U_LABEL[item.universe]||'')+(item.brand?' · '+item.brand:'')+'</div>'+
-      '</div></div>';
-  }).join('');
-}
-
-// ═══════════════════════════════════
-// RENDER GRID
+// RENDER
 // ═══════════════════════════════════
 function renderGrid(items){
   var g=document.getElementById('merch-grid');
@@ -1854,23 +1707,6 @@ function onUniChange(){
   var isTee=['T-shirt','Hoodie / Sweatshirt','Jacket'].includes(document.getElementById('item-type').value);
   document.getElementById('tee-wrap').style.display=isTee?'block':'none';
   buildTags(u);
-  // Populate group selector
-  var forced = document.getElementById('item-group-id-forced').value;
-  if (!forced) {
-    var wrap = document.getElementById('group-select-wrap');
-    var sel = document.getElementById('item-group-id');
-    if (u && allGroups.length) {
-      var groups = allGroups.filter(function(g){ return g.universe===u; });
-      sel.innerHTML = '<option value="">— Aucun groupe —</option>' +
-        groups.map(function(g){
-          var prefix = g.level===2 ? '  ↳ ' : '';
-          return '<option value="'+g.id+'">'+prefix+g.name+'</option>';
-        }).join('');
-      wrap.style.display = 'block';
-    } else {
-      wrap.style.display = 'none';
-    }
-  }
 }
 document.getElementById('item-type').addEventListener('change',function(){
   var isTee=['T-shirt','Hoodie / Sweatshirt','Jacket'].includes(this.value);
@@ -1929,31 +1765,16 @@ async function submitMerch(e){
     tags:tags, image_url:image_url,
     user_id:currentUser.id, contributor_email:currentUser.email
   };
-  var r=await sb.from('merch_items').insert([payload]).select();
+  var r=await sb.from('merch_items').insert([payload]);
   btn.textContent='SOUMETTRE À L\'ARCHIVE →'; btn.disabled=false;
   if(r.error){showAlert('add-alert','ERREUR: '+r.error.message,'err');}
   else{
-    // Lier au groupe si sélectionné
-    var forcedGroup = document.getElementById('item-group-id-forced').value;
-    var selectedGroup = document.getElementById('item-group-id').value;
-    var groupId = forcedGroup || selectedGroup;
-    if (groupId && r.data && r.data[0]) {
-      await sb.from('item_groups').insert([{item_id: r.data[0].id, group_id: groupId}]);
-    }
     showAlert('add-alert','ITEM AJOUTÉ !','ok');
     e.target.reset();
     document.getElementById('upload-preview').style.display='none';
     document.querySelectorAll('.ttog').forEach(function(b){b.classList.remove('sel');});
-    document.getElementById('item-group-id-forced').value='';
-    document.getElementById('group-select-wrap').style.display='none';
     await loadItems();
-    // Retourner au groupe si on venait de là
-    var returnGroup = document.getElementById('add-return-group').value;
-    if (returnGroup) {
-      setTimeout(function(){ showSection('browse'); browseGroup(returnGroup); },1000);
-    } else {
-      setTimeout(function(){showSection('explore');},1200);
-    }
+    setTimeout(function(){showSection('explore');},1200);
   }
 }
 
@@ -2283,7 +2104,7 @@ var allGroups = [];
 var browseState = { universe: null, parentGroup: null }; // navigation state
 
 async function loadGroups() {
-  if (!configured) return;
+  if (!configured || allGroups.length) return;
   var r = await sb.from('groups').select('*').eq('approved', true).order('name');
   allGroups = r.data || [];
 }
@@ -2413,17 +2234,12 @@ async function browseGroup(groupId) {
         '<span>CRÉER UN SOUS-GROUPE</span></div>' : '')+
       '</div>' : '')+
     '<div style="margin-top:32px">'+
-    '<div class="sec-head" style="align-items:center;">'+
-    '<h2>'+group.name.toUpperCase()+'</h2>'+
-    '<div style="display:flex;align-items:center;gap:12px;">'+
-    '<span>'+(linkedItems.length||0)+' ITEMS</span>'+
-    (currentUser ? '<button class="btn-edit" onclick="openAddItemInGroup(\''+groupId+'\',\''+group.universe+'\',\''+group.name+'\')">+ AJOUTER UN ITEM</button>' : '')+
-    '</div></div>'+
+    '<div class="sec-head"><h2>'+group.name.toUpperCase()+'</h2>'+
+    '<span>'+(linkedItems.length||0)+' ITEMS</span></div>'+
     (linkedItems.length ?
       '<div class="merch-grid" id="browse-items-grid"></div>' :
-      '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p>AUCUN ITEM ASSOCIÉ</p>'+
-      (currentUser ? '<button class="btn-edit" style="margin-top:16px" onclick="openAddItemInGroup(\''+groupId+'\',\''+group.universe+'\',\''+group.name+'\')">+ AJOUTER LE PREMIER ITEM →</button>' : '')+
-      '</div>')+
+      '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p>AUCUN ITEM ASSOCIÉ À CE GROUPE</p>'+
+      '<p style="font-size:12px;font-family:\'DM Mono\',monospace;color:var(--muted);margin-top:10px;letter-spacing:2px">Les items peuvent être rattachés à un groupe lors de la soumission</p></div>')+
     '</div>';
 
   if (linkedItems.length) renderBrowseGrid(linkedItems);
@@ -2453,17 +2269,11 @@ async function browseSubGroup(subGroupId, parentGroupId) {
     '<div class="browse-breadcrumb"><span>'+uLabel+'</span> / <span>'+(parent?parent.name:'')+'</span> / <span>'+subGroup.name+'</span></div>'+
     '</div>'+
     '<div style="margin-top:8px">'+
-    '<div class="sec-head" style="align-items:center;">'+
-    '<h2>'+subGroup.name.toUpperCase()+'</h2>'+
-    '<div style="display:flex;align-items:center;gap:12px;">'+
-    '<span>'+(linkedItems.length||0)+' ITEMS</span>'+
-    (currentUser ? '<button class="btn-edit" onclick="openAddItemInGroup(\''+subGroupId+'\',\''+subGroup.universe+'\',\''+subGroup.name+'\')">+ AJOUTER UN ITEM</button>' : '')+
-    '</div></div>'+
+    '<div class="sec-head"><h2>'+subGroup.name.toUpperCase()+'</h2>'+
+    '<span>'+(linkedItems.length||0)+' ITEMS</span></div>'+
     (linkedItems.length ?
       '<div class="merch-grid" id="browse-items-grid"></div>' :
-      '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p>AUCUN ITEM DANS CET ARC/ALBUM</p>'+
-      (currentUser ? '<button class="btn-edit" style="margin-top:16px" onclick="openAddItemInGroup(\''+subGroupId+'\',\''+subGroup.universe+'\',\''+subGroup.name+'\')">+ AJOUTER LE PREMIER ITEM →</button>' : '')+
-      '</div>')+
+      '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p>AUCUN ITEM DANS CET ARC/ALBUM</p></div>')+
     '</div>';
 
   if (linkedItems.length) renderBrowseGrid(linkedItems);
@@ -2493,29 +2303,7 @@ function renderBrowseGrid(items) {
   }).join('');
 }
 
-function openAddItemInGroup(groupId, universe, groupName) {
-  if (!currentUser) { showSection('auth'); return; }
-  // Pré-remplir le formulaire
-  showSection('add');
-  // Univers
-  var uSelect = document.getElementById('item-universe');
-  if (uSelect) { uSelect.value = universe; onUniChange(); }
-  // Forcer le groupe
-  document.getElementById('item-group-id-forced').value = groupId;
-  document.getElementById('add-return-group').value = groupId;
-  // Afficher bandeau contexte
-  var wrap = document.getElementById('group-select-wrap');
-  if (wrap) {
-    wrap.style.display = 'block';
-    wrap.innerHTML = '<label style="font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:6px;">GROUPE</label>'+
-      '<div style="padding:10px 12px;background:var(--navy);border:1px solid var(--blue);color:var(--blue2);font-family:\'DM Mono\',monospace;font-size:12px;letter-spacing:2px;">'+
-      groupName.toUpperCase()+' ✓</div>'+
-      '<input type="hidden" id="item-group-id" value="'+groupId+'">'+
-      '<input type="hidden" id="item-group-id-forced" value="'+groupId+'">';
-  }
-  // Scroll en haut
-  window.scrollTo(0,0);
-}
+function previewGroupImg(input) {
   if (input.files[0]) {
     var r = new FileReader();
     r.onload = function(e) {
@@ -2575,24 +2363,15 @@ async function submitGroup(e) {
     level: parseInt(document.getElementById('group-level').value) || 1,
     image_url: image_url,
     created_by: currentUser.email,
-    approved: true  // auto-approuvé en phase de test
+    approved: false
+  };
 
   var r = await sb.from('groups').insert([payload]);
   btn.textContent = LANG[currentLang].group_submit; btn.disabled = false;
   if (r.error) { showAlert('group-alert','ERREUR: '+r.error.message,'err'); }
   else {
-    allGroups = []; // force reload
-    await loadGroups();
-    renderCarouselGroups();
-    showAlert('group-alert', '✓ GROUPE CRÉÉ !', 'ok');
-    setTimeout(function(){
-      document.getElementById('create-group-modal').classList.remove('open');
-      // Si on est dans browse, refresh la vue
-      if (document.getElementById('section-browse').classList.contains('active')) {
-        if (browseState.universe) browseUniverse(browseState.universe);
-        else showBrowse();
-      }
-    }, 1200);
+    showAlert('group-alert', LANG[currentLang].group_submitted, 'ok');
+    setTimeout(function(){ document.getElementById('create-group-modal').classList.remove('open'); }, 1800);
   }
 }
 
