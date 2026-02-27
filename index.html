@@ -68,6 +68,82 @@
       font-weight: 500;
       padding-right: 80px;
     }
+    /* ── RADIO PLAYER ── */
+.radio-player {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+}
+.radio-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 10px 16px;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: all .2s;
+  white-space: nowrap;
+}
+.radio-btn:hover { border-color: var(--blue); color: var(--blue2); }
+.radio-btn.playing { color: var(--blue2); border-color: var(--blue); }
+.radio-btn.playing .radio-icon { color: var(--blue); }
+.radio-icon {
+  width: 28px; height: 28px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 10px; transition: all .2s;
+}
+.radio-btn.playing .radio-icon { background: var(--blue); border-color: var(--blue); color: #fff; }
+.radio-bars { display: none; align-items: flex-end; gap: 2px; height: 14px; }
+.radio-btn.playing .radio-bars { display: flex; }
+.radio-btn.playing .play-arrow { display: none; }
+.radio-bars span {
+  display: block; width: 2px; background: var(--blue2); border-radius: 1px;
+  animation: bar-bounce var(--dur, .8s) ease-in-out infinite alternate;
+}
+.radio-bars span:nth-child(1) { height: 6px; --dur:.6s; }
+.radio-bars span:nth-child(2) { height: 10px; --dur:.9s; }
+.radio-bars span:nth-child(3) { height: 14px; --dur:.7s; }
+.radio-bars span:nth-child(4) { height: 8px; --dur:1.0s; }
+.radio-bars span:nth-child(5) { height: 12px; --dur:.75s; }
+@keyframes bar-bounce { from { transform: scaleY(.3); } to { transform: scaleY(1); } }
+.radio-label { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+.radio-label-main { color: var(--white); font-size: 9px; letter-spacing: 3px; }
+.radio-label-sub { color: var(--muted); font-size: 8px; letter-spacing: 1px; }
+.radio-btn.playing .radio-label-main { color: var(--blue2); }
+.radio-btn.playing .radio-label-sub { color: var(--soft); }
+.radio-channels {
+  display: none; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--border);
+  border-bottom: none; min-width: 220px; overflow: hidden;
+}
+.radio-channels.open { display: flex; }
+.radio-ch {
+  padding: 9px 16px; cursor: pointer;
+  font-family: 'DM Mono', monospace; font-size: 9px;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--muted); border-bottom: 1px solid var(--border);
+  transition: all .15s; display: flex; align-items: center; gap: 10px;
+}
+.radio-ch:hover { color: var(--white); background: rgba(61,127,255,.06); }
+.radio-ch.active { color: var(--blue2); background: rgba(61,127,255,.08); }
+.radio-ch-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+.radio-ch.active .radio-ch-dot { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+.radio-ch-info { display: flex; flex-direction: column; gap: 2px; }
+.radio-ch-name { color: inherit; font-size: 9px; }
+.radio-ch-desc { color: var(--muted); font-size: 8px; letter-spacing: 1px; }
     @keyframes ticker { from{transform:translateX(0);} to{transform:translateX(-50%);} }
 
     /* ── HEADER ── */
@@ -1005,6 +1081,51 @@
     </div>
   </div>
 </div>
+  <!-- RADIO PLAYER -->
+<div class="radio-player" id="radio-player">
+  <div class="radio-channels" id="radio-channels">
+    <div class="radio-ch active" onclick="selectChannel(0)">
+      <div class="radio-ch-dot"></div>
+      <div class="radio-ch-info">
+        <span class="radio-ch-name">ED BANGER RADIO</span>
+        <span class="radio-ch-desc">French touch · Electro · Blog house</span>
+      </div>
+    </div>
+    <div class="radio-ch" onclick="selectChannel(1)">
+      <div class="radio-ch-dot"></div>
+      <div class="radio-ch-info">
+        <span class="radio-ch-name">CLUB TO CLUB</span>
+        <span class="radio-ch-desc">Techno · Electronic · Underground</span>
+      </div>
+    </div>
+    <div class="radio-ch" onclick="selectChannel(2)">
+      <div class="radio-ch-dot"></div>
+      <div class="radio-ch-info">
+        <span class="radio-ch-name">LOFI ARCHIVE</span>
+        <span class="radio-ch-desc">Chill beats · Study · Ambient</span>
+      </div>
+    </div>
+    <div class="radio-ch" onclick="selectChannel(3)">
+      <div class="radio-ch-dot"></div>
+      <div class="radio-ch-info">
+        <span class="radio-ch-name">BOILER ROOM</span>
+        <span class="radio-ch-desc">Live sets · DJ culture · Rave</span>
+      </div>
+    </div>
+  </div>
+  <button class="radio-btn" id="radio-btn" onclick="toggleRadio()">
+    <div class="radio-icon">
+      <span class="play-arrow">▶</span>
+      <div class="radio-bars"><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+    <div class="radio-label">
+      <span class="radio-label-main" id="radio-ch-name">RADIO</span>
+      <span class="radio-label-sub" id="radio-ch-sub">SELECT A CHANNEL</span>
+    </div>
+    <span id="radio-caret" style="font-size:8px;color:var(--muted);margin-left:4px;">▲</span>
+  </button>
+</div>
+<div id="radio-iframe-wrap" style="position:fixed;bottom:-1px;right:-1px;width:1px;height:1px;overflow:hidden;pointer-events:none;opacity:0;"></div>
 <!-- MODAL -->
 <div class="modal-bg" id="modal" onclick="closeModal(event)">
   <div class="modal">
@@ -1555,6 +1676,75 @@ function showAlert(id,msg,type){
   if(!el)return;
   el.textContent=msg; el.className='alert show alert-'+type;
   setTimeout(function(){el.classList.remove('show');},5000);
+}
+  // ── RADIO PLAYER ──
+const CHANNELS = [
+  { name: 'ED BANGER RADIO', sub: 'French touch · Electro', ytId: 'IdNeHbNNAhw' },
+  { name: 'CLUB TO CLUB',    sub: 'Techno · Electronic',    ytId: 'lTRiuFIWV54' },
+  { name: 'LOFI ARCHIVE',    sub: 'Chill beats · Ambient',  ytId: 'jfKfPfyJRdk' },
+  { name: 'BOILER ROOM',     sub: 'Live sets · DJ culture', ytId: 'UmedXxGH_hg' },
+];
+let radioPlaying = false, currentChannel = 0, channelOpen = false, ytPlayer = null, ytApiReady = false;
+
+function initYT() {
+  if (document.getElementById('yt-api-script')) return;
+  const s = document.createElement('script');
+  s.id = 'yt-api-script';
+  s.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+}
+window.onYouTubeIframeAPIReady = function() {
+  ytApiReady = true;
+  if (radioPlaying) loadChannel(currentChannel);
+};
+function loadChannel(idx) {
+  const ch = CHANNELS[idx];
+  const wrap = document.getElementById('radio-iframe-wrap');
+  wrap.innerHTML = '';
+  if (ytPlayer) { try { ytPlayer.destroy(); } catch(e){} ytPlayer = null; }
+  const div = document.createElement('div');
+  div.id = 'yt-player-inner';
+  wrap.appendChild(div);
+  ytPlayer = new YT.Player('yt-player-inner', {
+    height: '1', width: '1', videoId: ch.ytId,
+    playerVars: { autoplay: 1, controls: 0, loop: 1, playlist: ch.ytId, mute: 0, start: Math.floor(Math.random()*300) },
+    events: {
+      onReady: (e) => { e.target.setVolume(80); e.target.playVideo(); }
+    }
+  });
+}
+function toggleRadio() {
+  if (!channelOpen && !radioPlaying) { openChannelPicker(); return; }
+  if (channelOpen) { closeChannelPicker(); return; }
+  radioPlaying = !radioPlaying;
+  updatePlayerUI();
+  if (radioPlaying) { initYT(); if (ytApiReady) loadChannel(currentChannel); }
+  else { if (ytPlayer) { try { ytPlayer.stopVideo(); } catch(e){} } }
+}
+function openChannelPicker() {
+  channelOpen = true;
+  document.getElementById('radio-channels').classList.add('open');
+  document.getElementById('radio-caret').textContent = '▼';
+}
+function closeChannelPicker() {
+  channelOpen = false;
+  document.getElementById('radio-channels').classList.remove('open');
+  document.getElementById('radio-caret').textContent = '▲';
+}
+function selectChannel(idx) {
+  currentChannel = idx;
+  document.querySelectorAll('.radio-ch').forEach((el, i) => el.classList.toggle('active', i === idx));
+  closeChannelPicker();
+  radioPlaying = true;
+  updatePlayerUI();
+  initYT();
+  if (ytApiReady) loadChannel(idx);
+}
+function updatePlayerUI() {
+  const ch = CHANNELS[currentChannel];
+  document.getElementById('radio-ch-name').textContent = radioPlaying ? ch.name : 'RADIO';
+  document.getElementById('radio-ch-sub').textContent = radioPlaying ? ch.sub : 'SELECT A CHANNEL';
+  document.getElementById('radio-btn').classList.toggle('playing', radioPlaying);
 }
 </script>
 </body>
