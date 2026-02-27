@@ -959,6 +959,12 @@
       <div class="loading-state">CHARGEMENT...</div>
     </div>
 
+    <!-- BANDEAU CRÉER UN GROUPE — visible quand un univers est sélectionné -->
+    <div id="universe-cta" style="display:none;margin-top:20px;padding:14px 22px;border:1px dashed var(--mid);background:rgba(61,127,255,.04);display:none;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+      <span id="universe-cta-text" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--soft);text-transform:uppercase;">Can't find your artist, saga or series? Create it!</span>
+      <button id="universe-cta-btn" class="btn-edit" onclick="handleUniverseCTA()">CREATE A GROUP →</button>
+    </div>
+
   </section>
 
   <!-- ── BROWSE (UNIVERS → GROUPES → ITEMS) ── -->
@@ -1148,7 +1154,23 @@
           <button type="submit" class="btn-primary">SE CONNECTER</button>
         </form>
         <div class="form-alt">PAS DE COMPTE ? <a onclick="toggleAuth('register')">EN CRÉER UN</a></div>
+        <div class="form-alt"><a onclick="toggleAuth('forgot')">MOT DE PASSE OUBLIÉ ?</a></div>
       </div>
+
+      <div class="form-panel" id="panel-forgot" style="display:none">
+        <div class="panel-title">MOT DE PASSE OUBLIÉ</div>
+        <div class="alert" id="forgot-alert"></div>
+        <p style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1px;color:var(--muted);margin-bottom:20px;line-height:1.8;">Entrez votre email — vous recevrez un lien pour réinitialiser votre mot de passe.</p>
+        <form onsubmit="doForgot(event)">
+          <div class="fgroup" style="margin-bottom:16px">
+            <label>EMAIL</label>
+            <input type="email" id="forgot-email" required placeholder="vous@exemple.com">
+          </div>
+          <button type="submit" class="btn-primary">ENVOYER LE LIEN →</button>
+        </form>
+        <div class="form-alt"><a onclick="toggleAuth('login')">← RETOUR À LA CONNEXION</a></div>
+      </div>
+
       <div class="form-panel" id="panel-register" style="display:none">
         <div class="panel-title">CRÉER UN COMPTE</div>
         <div class="alert" id="reg-alert"></div>
@@ -1164,6 +1186,22 @@
           <button type="submit" class="btn-primary">REJOINDRE L'ARCHIVE</button>
         </form>
         <div class="form-alt">DÉJÀ MEMBRE ? <a onclick="toggleAuth('login')">SE CONNECTER</a></div>
+      </div>
+
+      <!-- MON COMPTE — visible quand connecté -->
+      <div class="form-panel" id="panel-account" style="display:none">
+        <div class="panel-title" id="account-title">MON COMPTE</div>
+        <div style="margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border);">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">EMAIL</div>
+          <div id="account-email" style="font-size:15px;color:var(--blue2);font-family:'DM Mono',monospace;">—</div>
+        </div>
+        <div style="margin-bottom:24px;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--white);margin-bottom:14px;">MES CONTRIBUTIONS</div>
+          <div id="my-contributions" style="display:flex;flex-direction:column;gap:8px;">
+            <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);">CHARGEMENT...</div>
+          </div>
+        </div>
+        <button class="btn-danger" style="width:100%;justify-content:center;margin-top:8px;" onclick="logout()">SE DÉCONNECTER</button>
       </div>
     </div>
   </section>
@@ -1433,17 +1471,67 @@ function showSection(name) {
     document.getElementById('add-gated').style.display = gated?'block':'none';
     document.getElementById('add-form-wrap').style.display = gated?'none':'block';
   }
+  if (name==='auth') {
+    if (currentUser) { toggleAuth('account'); loadMyContributions(); }
+    else { toggleAuth('login'); }
+  }
   if (name==='browse') { showBrowse(); }
   if (name==='admin' && isAdmin()) { loadAdminPanel(); }
   window.scrollTo(0,0);
+}
+
+function handleUniverseCTA() {
+  if (currentUser) {
+    openCreateGroup(activeU, '', 1);
+  } else {
+    showSection('auth');
+  }
+}
+
+async function loadMyContributions() {
+  if (!currentUser || !configured) return;
+  var el = document.getElementById('my-contributions');
+  if (!el) return;
+  document.getElementById('account-email').textContent = currentUser.email;
+  el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);">CHARGEMENT...</div>';
+  var r = await sb.from('merch_items').select('id,name,brand,universe,year,image_url,status').eq('user_id', currentUser.id).order('created_at',{ascending:false});
+  var items = r.data || [];
+  if (!items.length) {
+    el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);padding:20px 0;text-align:center;">AUCUNE CONTRIBUTION POUR L\'INSTANT</div>';
+    return;
+  }
+  el.innerHTML = items.map(function(item){
+    var sc = SCLS[item.status]||'s-retail';
+    var sl = SLBL[item.status]||'';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--navy);border:1px solid var(--border);cursor:pointer;" onclick="openMyItem(\''+item.id+'\')">'+
+      (item.image_url ?
+        '<img src="'+item.image_url+'" style="width:48px;height:48px;object-fit:cover;flex-shrink:0;">' :
+        '<div style="width:48px;height:48px;background:var(--panel);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-family:\'Bebas Neue\',sans-serif;color:var(--border);font-size:18px;">'+(U_ICON[item.universe]||'◈')+'</div>')+
+      '<div style="flex:1;min-width:0;">'+
+        '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;letter-spacing:2px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(item.name||'—')+'</div>'+
+        '<div style="font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">'+(U_LABEL[item.universe]||'')+(item.brand?' · '+item.brand:'')+(item.year?' · '+item.year:'')+'</div>'+
+      '</div>'+
+      (sl ? '<span class="card-status '+sc+'" style="position:static;font-size:8px;">'+sl+'</span>' : '')+
+      '</div>';
+  }).join('');
+}
+
+function openMyItem(itemId) {
+  var item = allItems.find(function(i){ return i.id === itemId; });
+  if (item) { openModal(item); }
 }
 
 // ═══════════════════════════════════
 // AUTH
 // ═══════════════════════════════════
 function toggleAuth(m){
-  document.getElementById('panel-login').style.display    = m==='login'?'block':'none';
-  document.getElementById('panel-register').style.display = m==='register'?'block':'none';
+  var panels = ['login','register','forgot','account'];
+  panels.forEach(function(p){
+    var el = document.getElementById('panel-'+p);
+    if (el) el.style.display = 'none';
+  });
+  var target = document.getElementById('panel-'+m);
+  if (target) target.style.display = 'block';
 }
 function setUser(u){
   currentUser=u;
@@ -1480,6 +1568,16 @@ async function doRegister(e){
   if(r.error) showAlert('reg-alert',r.error.message,'err');
   else showAlert('reg-alert','VÉRIFIE TON EMAIL','ok');
 }
+async function doForgot(e){
+  e.preventDefault();
+  if(!configured){showAlert('forgot-alert','Supabase non configuré','err');return;}
+  var email = document.getElementById('forgot-email').value;
+  var r = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname
+  });
+  if(r.error) showAlert('forgot-alert', r.error.message, 'err');
+  else showAlert('forgot-alert','EMAIL ENVOYÉ — VÉRIFIE TA BOÎTE MAIL ✓','ok');
+}
 async function logout(){await sb.auth.signOut();clearUser();showSection('explore');}
 
 // ═══════════════════════════════════
@@ -1506,6 +1604,21 @@ function setU(btn,u){
   document.querySelectorAll('.upill').forEach(function(p){p.classList.remove('active');});
   btn.classList.add('active');
   filterItems();
+  // Bandeau créer un groupe
+  var cta = document.getElementById('universe-cta');
+  if (cta) {
+    if (u) {
+      cta.style.display = 'flex';
+      var L = typeof LANG !== 'undefined' ? LANG[currentLang] : null;
+      var cantFind = L ? L.cant_find : "Can't find your artist, saga or series? Create it!";
+      var createTxt = L ? L.create_group : 'CREATE A GROUP';
+      var loginTxt = L ? L.login_to_create : 'LOGIN TO CREATE';
+      document.getElementById('universe-cta-text').textContent = cantFind;
+      document.getElementById('universe-cta-btn').textContent = (currentUser ? createTxt : loginTxt) + ' →';
+    } else {
+      cta.style.display = 'none';
+    }
+  }
 }
 function filterItems(){
   var q=document.getElementById('search-input').value.toLowerCase();
