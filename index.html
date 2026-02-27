@@ -882,11 +882,12 @@
       <div class="hstat"><strong>8</strong>UNIVERS</div>
     </div>
     <div class="header-nav">
-      <button class="nav-btn active" onclick="showSection('explore')">EXPLORER</button>
-      <button class="nav-btn" onclick="showSection('browse')">UNIVERS</button>
-      <button class="nav-btn" onclick="showSection('add')">+ SOUMETTRE</button>
+      <button class="nav-btn active" onclick="showSection('explore')" data-i18n="nav_explore">EXPLORER</button>
+      <button class="nav-btn" onclick="showSection('browse')" data-i18n="nav_browse">UNIVERS</button>
+      <button class="nav-btn" onclick="showSection('add')" data-i18n="nav_add">+ SOUMETTRE</button>
       <button class="nav-btn admin-nav" id="nav-admin" style="display:none" onclick="showSection('admin')">⚡ ADMIN</button>
-      <button class="nav-btn cta" onclick="showSection('auth')" id="nav-auth">CONNEXION</button>
+      <button class="nav-btn cta" onclick="showSection('auth')" id="nav-auth" data-i18n="nav_login">CONNEXION</button>
+      <button class="nav-btn" id="lang-btn" onclick="toggleLang()" style="border-color:var(--mid);color:var(--muted);font-size:9px;letter-spacing:3px;padding:7px 10px;">FR</button>
     </div>
   </div>
   <div class="user-bar" id="user-bar">
@@ -1183,18 +1184,22 @@
         <input type="hidden" id="group-universe" value="">
         <input type="hidden" id="group-level" value="1">
         <div class="fgroup" style="margin-bottom:16px">
-          <label>NOM *</label>
+          <label data-i18n="group_name">NOM *</label>
           <input type="text" id="group-name" required placeholder="ex: Justice, Star Wars, Daft Punk...">
         </div>
         <div class="fgroup" style="margin-bottom:16px">
-          <label>DESCRIPTION</label>
+          <label data-i18n="group_desc">DESCRIPTION</label>
           <textarea id="group-desc" style="min-height:70px;" placeholder="Quelques mots sur ce groupe..."></textarea>
         </div>
         <div class="fgroup" style="margin-bottom:20px">
-          <label>IMAGE (URL)</label>
-          <input type="url" id="group-img" placeholder="https://...">
+          <label data-i18n="group_photo">PHOTO VITRINE</label>
+          <div class="upload-zone" onclick="document.getElementById('group-img-input').click()" id="group-upload-zone">
+            <div class="upload-lbl" id="group-upload-lbl">↑ CLIQUER POUR UPLOADER</div>
+            <input type="file" id="group-img-input" accept="image/*" onchange="previewGroupImg(this)">
+            <img id="group-img-preview" class="upload-preview" alt="">
+          </div>
         </div>
-        <button type="submit" class="btn-primary">SOUMETTRE LE GROUPE →</button>
+        <button type="submit" class="btn-primary" data-i18n="group_submit">SOUMETTRE LE GROUPE →</button>
       </form>
     </div>
   </div>
@@ -1444,14 +1449,16 @@ function setUser(u){
   currentUser=u;
   document.getElementById('user-bar').classList.add('show');
   document.getElementById('user-email').textContent=u.email;
-  document.getElementById('nav-auth').textContent='COMPTE';
+  document.getElementById('nav-auth').textContent=LANG[currentLang].nav_account;
   refreshAdminNav();
+  applyLang();
 }
 function clearUser(){
   currentUser=null;
   document.getElementById('user-bar').classList.remove('show');
-  document.getElementById('nav-auth').textContent='CONNEXION';
+  document.getElementById('nav-auth').textContent=LANG[currentLang].nav_login;
   refreshAdminNav();
+  applyLang();
 }
 async function doLogin(e){
   e.preventDefault();
@@ -2029,36 +2036,46 @@ async function browseUniverse(universe) {
   var uLabel = U_LABEL[universe] || universe.toUpperCase();
   var uIcon  = U_ICON[universe] || '◈';
   var items  = allItems.filter(function(i){ return i.universe===universe; });
+  var L = LANG[currentLang];
 
   var el = document.getElementById('browse-content');
   el.innerHTML =
     '<div class="browse-header">'+
-    '<button class="browse-back" onclick="showBrowse()">← UNIVERS</button>'+
+    '<button class="browse-back" onclick="showBrowse()">← '+L.nav_browse+'</button>'+
     '<div class="browse-breadcrumb"><span>'+uIcon+' '+uLabel+'</span></div>'+
     '</div>'+
     '<div class="groups-grid">'+
     groups.map(function(g){
       var subCount = allGroups.filter(function(s){ return s.parent_id===g.id; }).length;
-      var imgStyle = g.image_url ? 'style="background-image:url('+g.image_url+');background-size:cover;background-position:center"' : '';
+      var imgStyle = g.image_url ? 'style="background-image:url('+g.image_url+');background-size:cover;background-position:center;min-height:140px"' : '';
       return '<div class="group-card" onclick="browseGroup(\''+g.id+'\')" '+imgStyle+'>'+
-        (g.image_url?'<div style="position:absolute;inset:0;background:rgba(4,6,15,.6)"></div><div style="position:relative">':'') +
+        (g.image_url?'<div style="position:absolute;inset:0;background:rgba(4,6,15,.55)"></div><div style="position:relative">':'') +
         '<div class="group-card-name">'+g.name+'</div>'+
         '<div class="group-card-meta">'+(g.description||'')+
-        (subCount?' · '+subCount+' sous-groupe'+(subCount>1?'s':''):'')+'</div>'+
+        (subCount?' · '+subCount+' '+L.subgroups:'')+'</div>'+
         (g.image_url?'</div>':'')+
-        '<div class="group-card-count" style="position:relative">'+subCount+' ↓</div>'+
         '</div>';
     }).join('')+
-    // + carte "créer un groupe" si connecté
+    // Carte "créer un groupe" — visible si connecté
     (currentUser ?
       '<div class="group-add-card" onclick="openCreateGroup(\''+universe+'\',\'\',1)">'+
-      '<span style="font-size:22px;margin-bottom:6px">+</span>'+
-      '<span>CRÉER UN GROUPE</span></div>' : '')+
+      '<span style="font-size:28px;margin-bottom:8px;color:var(--blue)">+</span>'+
+      '<span style="color:var(--blue2)">'+L.create_group+'</span></div>' : '')+
     '</div>'+
-    // Items sans groupe dans cet univers
+    // Phrase d'accroche si pas connecté
+    (!currentUser ?
+      '<div style="margin:24px 0;padding:18px 22px;border:1px dashed var(--mid);background:rgba(61,127,255,.04);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">'+
+      '<span style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:2px;color:var(--soft);text-transform:uppercase;">'+L.cant_find+'</span>'+
+      '<button class="btn-edit" onclick="showSection(\'auth\')">'+L.login_to_create+' →</button>'+
+      '</div>' :
+      '<div style="margin:16px 0;padding:14px 22px;border:1px dashed var(--mid);background:rgba(61,127,255,.04);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">'+
+      '<span style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:2px;color:var(--soft);text-transform:uppercase;">'+L.cant_find+'</span>'+
+      '<button class="btn-edit" onclick="openCreateGroup(\''+universe+'\',\'\',1)">'+L.create_group+' →</button>'+
+      '</div>')+
+    // Items dans cet univers
     (items.length ?
       '<div style="margin-top:36px">'+
-      '<div class="sec-head"><h2>TOUS LES ITEMS</h2><span>'+items.length+' ITEMS DANS '+uLabel+'</span></div>'+
+      '<div class="sec-head"><h2>'+L.all_items+'</h2><span>'+items.length+' ITEMS DANS '+uLabel+'</span></div>'+
       '<div class="merch-grid" id="browse-items-grid"></div></div>' : '');
 
   if (items.length) renderBrowseGrid(items);
@@ -2173,17 +2190,31 @@ function renderBrowseGrid(items) {
   }).join('');
 }
 
-// CREATE GROUP
+function previewGroupImg(input) {
+  if (input.files[0]) {
+    var r = new FileReader();
+    r.onload = function(e) {
+      var p = document.getElementById('group-img-preview');
+      p.src = e.target.result; p.style.display = 'block';
+      document.getElementById('group-upload-lbl').textContent = input.files[0].name;
+    };
+    r.readAsDataURL(input.files[0]);
+  }
+}
+
 function openCreateGroup(universe, parentId, level) {
   if (!currentUser) { showSection('auth'); return; }
   document.getElementById('group-parent-id').value = parentId || '';
   document.getElementById('group-universe').value = universe;
   document.getElementById('group-level').value = level || 1;
-  var title = level===2 ? 'CRÉER UN SOUS-GROUPE (ALBUM / ARC)' : 'CRÉER UN GROUPE (ARTISTE / SAGA)';
+  var L = LANG[currentLang];
+  var title = level===2 ? L.create_subgroup : L.create_group_title;
   document.getElementById('create-group-title').textContent = title;
   document.getElementById('group-name').value = '';
   document.getElementById('group-desc').value = '';
-  document.getElementById('group-img').value = '';
+  document.getElementById('group-img-input').value = '';
+  document.getElementById('group-img-preview').style.display = 'none';
+  document.getElementById('group-upload-lbl').textContent = '↑ CLIQUER POUR UPLOADER';
   document.getElementById('group-alert').className = 'alert';
   document.getElementById('create-group-modal').classList.add('open');
 }
@@ -2196,7 +2227,20 @@ async function submitGroup(e) {
   e.preventDefault();
   if (!configured || !currentUser) { showAlert('group-alert','Connexion requise','err'); return; }
   var btn = e.target.querySelector('[type=submit]');
-  btn.textContent = 'ENVOI...'; btn.disabled = true;
+  btn.textContent = 'UPLOAD...'; btn.disabled = true;
+
+  // Upload image si présente
+  var image_url = null;
+  var file = document.getElementById('group-img-input').files[0];
+  if (file) {
+    var ext = file.name.split('.').pop();
+    var fn = 'group-' + Date.now() + '-' + Math.random().toString(36).slice(2) + '.' + ext;
+    var ur = await sb.storage.from('merch-images').upload(fn, file);
+    if (!ur.error) {
+      var ud = sb.storage.from('merch-images').getPublicUrl(fn);
+      image_url = ud.data.publicUrl;
+    }
+  }
 
   var payload = {
     name: document.getElementById('group-name').value,
@@ -2204,19 +2248,235 @@ async function submitGroup(e) {
     universe: document.getElementById('group-universe').value,
     parent_id: document.getElementById('group-parent-id').value || null,
     level: parseInt(document.getElementById('group-level').value) || 1,
-    image_url: document.getElementById('group-img').value || null,
+    image_url: image_url,
     created_by: currentUser.email,
-    approved: false  // en attente de validation admin
+    approved: false
   };
 
   var r = await sb.from('groups').insert([payload]);
-  btn.textContent = 'SOUMETTRE LE GROUPE →'; btn.disabled = false;
+  btn.textContent = LANG[currentLang].group_submit; btn.disabled = false;
   if (r.error) { showAlert('group-alert','ERREUR: '+r.error.message,'err'); }
   else {
-    showAlert('group-alert','GROUPE SOUMIS — EN ATTENTE DE VALIDATION ✓','ok');
+    showAlert('group-alert', LANG[currentLang].group_submitted, 'ok');
     setTimeout(function(){ document.getElementById('create-group-modal').classList.remove('open'); }, 1800);
   }
 }
+
+  // ── I18N — LANGUE ──
+var currentLang = localStorage.getItem('ma_lang') || 'fr';
+
+var LANG = {
+  fr: {
+    nav_explore: 'EXPLORER',
+    nav_browse: 'UNIVERS',
+    nav_add: '+ SOUMETTRE',
+    nav_login: 'CONNEXION',
+    nav_account: 'COMPTE',
+    archive_title: 'THE ARCHIVE',
+    submit_title: 'SOUMETTRE UN ITEM',
+    login_title: 'CONNEXION',
+    register_title: 'CRÉER UN COMPTE',
+    admin_title: 'ADMIN PANEL',
+    search_placeholder: 'Rechercher...',
+    all_types: 'TOUS TYPES',
+    all_statuses: 'TOUS STATUTS',
+    most_recent: 'PLUS RÉCENTS',
+    year_desc: 'ANNÉE ↓',
+    year_asc: 'ANNÉE ↑',
+    alpha: 'A → Z',
+    loading: 'CHARGEMENT...',
+    no_items: 'AUCUN ITEM TROUVÉ',
+    archived: 'ARCHIVÉS',
+    contributors: 'CONTRIBUTEURS',
+    universes: 'UNIVERS',
+    submit_btn: 'SOUMETTRE À L\'ARCHIVE →',
+    login_btn: 'SE CONNECTER',
+    register_btn: 'REJOINDRE L\'ARCHIVE',
+    no_account: 'PAS DE COMPTE ?',
+    create_one: 'EN CRÉER UN',
+    already_member: 'DÉJÀ MEMBRE ?',
+    login_link: 'SE CONNECTER',
+    connected: 'CONNECTÉ',
+    logout: 'DÉCONNEXION',
+    cant_find: 'Tu ne trouves pas ton artiste, saga ou série ? Crée-le !',
+    login_to_create: 'SE CONNECTER POUR CRÉER',
+    create_group: 'CRÉER UN GROUPE',
+    create_group_title: 'CRÉER UN GROUPE (ARTISTE / SAGA)',
+    create_subgroup: 'CRÉER UN SOUS-GROUPE (ALBUM / ARC)',
+    group_name_label: 'NOM *',
+    group_desc_label: 'DESCRIPTION',
+    group_photo_label: 'PHOTO VITRINE',
+    group_submit: 'SOUMETTRE LE GROUPE →',
+    group_submitted: 'GROUPE SOUMIS — EN ATTENTE DE VALIDATION ✓',
+    subgroups: 'sous-groupes',
+    all_items: 'TOUS LES ITEMS',
+    browse_subtitle: 'NAVIGUER PAR CATÉGORIE',
+    groups_label: 'groupes',
+    items_label: 'items',
+    connection_required: 'CONNEXION REQUISE',
+    login_required_btn: 'SE CONNECTER →',
+  },
+  en: {
+    nav_explore: 'EXPLORE',
+    nav_browse: 'UNIVERSES',
+    nav_add: '+ SUBMIT',
+    nav_login: 'LOGIN',
+    nav_account: 'ACCOUNT',
+    archive_title: 'THE ARCHIVE',
+    submit_title: 'SUBMIT AN ITEM',
+    login_title: 'LOGIN',
+    register_title: 'CREATE AN ACCOUNT',
+    admin_title: 'ADMIN PANEL',
+    search_placeholder: 'Search...',
+    all_types: 'ALL TYPES',
+    all_statuses: 'ALL STATUSES',
+    most_recent: 'MOST RECENT',
+    year_desc: 'YEAR ↓',
+    year_asc: 'YEAR ↑',
+    alpha: 'A → Z',
+    loading: 'LOADING...',
+    no_items: 'NO ITEMS FOUND',
+    archived: 'ARCHIVED',
+    contributors: 'CONTRIBUTORS',
+    universes: 'UNIVERSES',
+    submit_btn: 'SUBMIT TO THE ARCHIVE →',
+    login_btn: 'LOGIN',
+    register_btn: 'JOIN THE ARCHIVE',
+    no_account: 'NO ACCOUNT?',
+    create_one: 'CREATE ONE',
+    already_member: 'ALREADY A MEMBER?',
+    login_link: 'LOGIN',
+    connected: 'LOGGED IN',
+    logout: 'LOGOUT',
+    cant_find: "Can't find your artist, saga or series? Create it!",
+    login_to_create: 'LOGIN TO CREATE',
+    create_group: 'CREATE A GROUP',
+    create_group_title: 'CREATE A GROUP (ARTIST / SAGA)',
+    create_subgroup: 'CREATE A SUBGROUP (ALBUM / ARC)',
+    group_name_label: 'NAME *',
+    group_desc_label: 'DESCRIPTION',
+    group_photo_label: 'COVER PHOTO',
+    group_submit: 'SUBMIT GROUP →',
+    group_submitted: 'GROUP SUBMITTED — PENDING VALIDATION ✓',
+    subgroups: 'subgroups',
+    all_items: 'ALL ITEMS',
+    browse_subtitle: 'BROWSE BY CATEGORY',
+    groups_label: 'groups',
+    items_label: 'items',
+    connection_required: 'LOGIN REQUIRED',
+    login_required_btn: 'LOGIN →',
+  }
+};
+
+function toggleLang() {
+  currentLang = currentLang === 'fr' ? 'en' : 'fr';
+  localStorage.setItem('ma_lang', currentLang);
+  applyLang();
+}
+
+function applyLang() {
+  var L = LANG[currentLang];
+  var btn = document.getElementById('lang-btn');
+  if (btn) btn.textContent = currentLang === 'fr' ? 'EN' : 'FR';
+
+  // Nav buttons
+  var navBtns = document.querySelectorAll('[data-i18n]');
+  navBtns.forEach(function(el) {
+    var key = el.getAttribute('data-i18n');
+    if (L[key]) {
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') el.placeholder = L[key];
+      else el.textContent = L[key];
+    }
+  });
+
+  // Search placeholder
+  var si = document.getElementById('search-input');
+  if (si) si.placeholder = L.search_placeholder;
+
+  // Selects
+  var ft = document.getElementById('filter-type');
+  if (ft && ft.options[0]) ft.options[0].text = L.all_types;
+  var fs = document.getElementById('filter-status');
+  if (fs && fs.options[0]) fs.options[0].text = L.all_statuses;
+  var sb2 = document.getElementById('sort-by');
+  if (sb2) {
+    if (sb2.options[0]) sb2.options[0].text = L.most_recent;
+    if (sb2.options[1]) sb2.options[1].text = L.year_desc;
+    if (sb2.options[2]) sb2.options[2].text = L.year_asc;
+    if (sb2.options[3]) sb2.options[3].text = L.alpha;
+  }
+
+  // Stats labels
+  document.querySelectorAll('.hstat').forEach(function(el) {
+    var strong = el.querySelector('strong');
+    if (!strong) return;
+    var id = strong.id;
+    if (id === 'stat-total') el.childNodes[el.childNodes.length-1].textContent = L.archived;
+    if (id === 'stat-contrib') el.childNodes[el.childNodes.length-1].textContent = L.contributors;
+  });
+
+  // Connexion/compte button
+  var navAuth = document.getElementById('nav-auth');
+  if (navAuth) navAuth.textContent = currentUser ? L.nav_account : L.nav_login;
+
+  // User bar
+  var connectedEl = document.querySelector('.user-bar span:first-child');
+  if (connectedEl) connectedEl.textContent = L.connected;
+  var logoutBtn = document.querySelector('.user-bar .btn-xs');
+  if (logoutBtn) logoutBtn.textContent = L.logout;
+
+  // Section titles
+  var secHeads = document.querySelectorAll('.sec-head h2');
+  secHeads.forEach(function(el) {
+    if (el.textContent === 'THE ARCHIVE' || el.textContent === 'THE ARCHIVE') {}// keep
+  });
+
+  // Add/login section panels
+  var panelTitles = document.querySelectorAll('.panel-title');
+  panelTitles.forEach(function(el) {
+    if (el.closest('#panel-login')) el.textContent = L.login_title;
+    if (el.closest('#panel-register')) el.textContent = L.register_title;
+    if (el.closest('#add-form-wrap')) el.textContent = L.submit_title;
+  });
+
+  // Form buttons
+  var loginBtn = document.querySelector('#panel-login .btn-primary');
+  if (loginBtn) loginBtn.textContent = L.login_btn;
+  var regBtn = document.querySelector('#panel-register .btn-primary');
+  if (regBtn) regBtn.textContent = L.register_btn;
+
+  // form-alt links
+  var noAcc = document.querySelector('#panel-login .form-alt');
+  if (noAcc) noAcc.innerHTML = L.no_account+' <a onclick="toggleAuth(\'register\')">'+L.create_one+'</a>';
+  var alreadyMember = document.querySelector('#panel-register .form-alt');
+  if (alreadyMember) alreadyMember.innerHTML = L.already_member+' <a onclick="toggleAuth(\'login\')">'+L.login_link+'</a>';
+
+  // Add gated
+  var addGated = document.getElementById('add-gated');
+  if (addGated) {
+    var p = addGated.querySelector('p');
+    if (p) p.textContent = L.connection_required;
+    var b = addGated.querySelector('.btn-primary');
+    if (b) b.textContent = L.login_required_btn;
+  }
+
+  // Submit button
+  var addSubmit = document.querySelector('#add-form .btn-primary');
+  if (addSubmit) addSubmit.textContent = L.submit_btn;
+
+  // Group modal labels
+  var groupNameLbl = document.querySelector('label[data-i18n="group_name"]');
+  if (groupNameLbl) groupNameLbl.textContent = L.group_name_label;
+  var groupDescLbl = document.querySelector('label[data-i18n="group_desc"]');
+  if (groupDescLbl) groupDescLbl.textContent = L.group_desc_label;
+  var groupPhotoLbl = document.querySelector('label[data-i18n="group_photo"]');
+  if (groupPhotoLbl) groupPhotoLbl.textContent = L.group_photo_label;
+  var groupSubmitBtn = document.querySelector('button[data-i18n="group_submit"]');
+  if (groupSubmitBtn) groupSubmitBtn.textContent = L.group_submit;
+}
+
+// Apply on load
+document.addEventListener('DOMContentLoaded', function(){ applyLang(); });
 
   // ── RADIO PLAYER ──
 const CHANNELS = [
