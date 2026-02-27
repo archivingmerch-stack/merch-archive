@@ -577,6 +577,70 @@
       .form-grid { grid-template-columns:1fr; }
       .detail-row { grid-template-columns:1fr 1fr; }
     }
+    /* ── MULTI-PHOTOS ── */
+.photo-grid { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+.photo-thumb {
+  width:80px; height:80px; object-fit:cover; cursor:pointer;
+  border:2px solid transparent; transition:border-color .15s;
+}
+.photo-thumb.active { border-color:var(--blue); }
+.photo-thumb-wrap { position:relative; }
+.photo-del {
+  position:absolute; top:-6px; right:-6px;
+  background:var(--blue); color:#fff; border:none;
+  width:18px; height:18px; border-radius:50%; cursor:pointer;
+  font-size:11px; line-height:18px; text-align:center; display:none;
+}
+.photo-thumb-wrap:hover .photo-del { display:block; }
+
+/* ── EDIT MODAL ── */
+.edit-modal-bg {
+  display:none; position:fixed; inset:0;
+  background:rgba(4,6,15,.95); z-index:1000;
+  align-items:center; justify-content:center; padding:24px;
+  overflow-y:auto;
+}
+.edit-modal-bg.open { display:flex; }
+.edit-modal {
+  background:var(--navy); border:1px solid var(--border);
+  max-width:760px; width:100%; max-height:90vh; overflow-y:auto;
+  position:relative; animation:mIn .2s ease;
+}
+.edit-modal::before {
+  content:''; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,var(--blue),rgba(61,127,255,0));
+}
+.edit-head {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:16px 24px; border-bottom:1px solid var(--border);
+}
+.edit-head-title {
+  font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:3px;
+}
+.edit-close {
+  background:none; border:none; color:var(--muted);
+  font-size:20px; cursor:pointer; padding:4px;
+}
+.edit-close:hover { color:var(--blue2); }
+.edit-content { padding:28px; }
+
+/* bouton modifier dans modal */
+.btn-edit {
+  display:inline-flex; align-items:center; gap:7px;
+  padding:9px 16px; border:1px solid var(--blue);
+  color:var(--blue2); font-family:'DM Mono',monospace; font-size:11px;
+  letter-spacing:2px; text-transform:uppercase; cursor:pointer;
+  background:none; transition:all .15s;
+}
+.btn-edit:hover { background:var(--blue); color:#fff; }
+.btn-danger {
+  display:inline-flex; align-items:center; gap:7px;
+  padding:9px 16px; border:1px solid #aa3333;
+  color:#dd6666; font-family:'DM Mono',monospace; font-size:11px;
+  letter-spacing:2px; text-transform:uppercase; cursor:pointer;
+  background:none; transition:all .15s;
+}
+.btn-danger:hover { background:#aa3333; color:#fff; }
   </style>
 </head>
 <body>
@@ -862,7 +926,85 @@
   </section>
 
 </main>
+<!-- EDIT MODAL -->
+<div class="edit-modal-bg" id="edit-modal" onclick="closeEditModal(event)">
+  <div class="edit-modal">
+    <div class="edit-head">
+      <div class="edit-head-title">MODIFIER L'ITEM</div>
+      <button class="edit-close" onclick="document.getElementById('edit-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="edit-content">
+      <div class="alert" id="edit-alert"></div>
 
+      <!-- photos existantes -->
+      <div style="margin-bottom:18px;">
+        <label style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:8px;">PHOTOS ACTUELLES</label>
+        <div class="photo-grid" id="edit-photos-grid"></div>
+        <div class="upload-zone" style="margin-top:8px;" onclick="document.getElementById('edit-img-input').click()">
+          <div class="upload-lbl">↑ AJOUTER DES PHOTOS (max 5)</div>
+          <input type="file" id="edit-img-input" accept="image/*" multiple onchange="previewEditImgs(this)">
+        </div>
+        <div class="photo-grid" id="edit-new-previews" style="margin-top:8px;"></div>
+      </div>
+
+      <form id="edit-form" onsubmit="saveEdit(event)">
+        <input type="hidden" id="edit-item-id">
+        <div class="form-grid">
+          <div class="fgroup">
+            <label>NOM *</label>
+            <input type="text" id="edit-name" required>
+          </div>
+          <div class="fgroup">
+            <label>ARTISTE / MARQUE</label>
+            <input type="text" id="edit-brand">
+          </div>
+          <div class="fgroup">
+            <label>UNIVERS</label>
+            <select id="edit-universe">
+              <option value="film">FILM</option>
+              <option value="serie">SÉRIE</option>
+              <option value="musique">MUSIQUE</option>
+              <option value="jeux">JEUX VIDÉO</option>
+              <option value="comics">COMICS & BD</option>
+              <option value="anime">ANIME & MANGA</option>
+              <option value="sport">SPORT</option>
+              <option value="marques">MARQUES</option>
+            </select>
+          </div>
+          <div class="fgroup">
+            <label>STATUT</label>
+            <select id="edit-status">
+              <option value="promo">PROMO</option>
+              <option value="retail">GRAND PUBLIC</option>
+              <option value="limited">LIMITED EDITION</option>
+              <option value="special">SPECIAL / RARE</option>
+            </select>
+          </div>
+          <div class="fgroup">
+            <label>TYPE DE PRODUIT</label>
+            <input type="text" id="edit-type">
+          </div>
+          <div class="fgroup">
+            <label>ANNÉE</label>
+            <input type="number" id="edit-year" min="1950" max="2030">
+          </div>
+          <div class="fgroup form-full">
+            <label>DESCRIPTION</label>
+            <textarea id="edit-desc" style="min-height:80px;"></textarea>
+          </div>
+          <div class="fgroup form-full">
+            <label>LIEN</label>
+            <input type="url" id="edit-link">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+          <button type="submit" class="btn-primary" style="width:auto;padding:11px 28px;">SAUVEGARDER →</button>
+          <button type="button" class="btn-danger" onclick="deleteItem()">SUPPRIMER CET ITEM</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 <!-- MODAL -->
 <div class="modal-bg" id="modal" onclick="closeModal(event)">
   <div class="modal">
@@ -1197,26 +1339,212 @@ async function submitMerch(e){
 }
 
 // ═══════════════════════════════════
-// DEMO — Cool Cats × Ed Banger
+// MODAL — affichage multi-photos
 // ═══════════════════════════════════
-function loadDemo(){
-  allItems=CC_IMGS.map(function(img,i){
-    return {
-      id:i+1,
-      name:'Cool Cats Tee #'+(i+1).toString().padStart(2,'0'),
-      brand:'Cool Cats / Ed Banger Records',
-      universe:'musique',
-      product_type:'T-shirt',
-      status: i%5===0?'promo' : i%5===1?'limited' : i%5===2?'special' : 'retail',
-      year: 2003 + (i%8),
-      tee_brand: ['Changes','TULTEX','Alstyle (AAA)','Gildan (3)'][i%4],
-      description:'T-shirt Cool Cats issu de la collection Ed Banger Records. French Touch era.',
-      tags:['Ed Banger','Cool Cats','French Touch','Y2K','Tour Merch','Band Tee'],
-      contributor_email:'demo@archive.com',
-      image_url:img
+// Remplace ta fonction openModal existante par celle-ci :
+function openModal(item){
+  document.getElementById('modal-title').textContent=item.name||'—';
+  var tags=item.tags||[];
+
+  // Collecte toutes les images (nouvelle colonne + ancienne)
+  var imgs=[];
+  if(item.image_urls && item.image_urls.length) imgs=item.image_urls;
+  else if(item.image_url) imgs=[item.image_url];
+
+  // Galerie photos
+  var galleryHtml='';
+  if(imgs.length>1){
+    galleryHtml='<div style="margin-bottom:16px;">'+
+      '<img id="modal-main-img" class="modal-img" src="'+imgs[0]+'" alt="" style="cursor:default;">'+
+      '<div class="photo-grid" style="margin-top:8px;">'+
+      imgs.map(function(url,i){
+        return '<img class="photo-thumb'+(i===0?' active':'')+'" src="'+url+'" onclick="switchModalImg(this,\''+url+'\')">';
+      }).join('')+
+      '</div></div>';
+  } else if(imgs.length===1){
+    galleryHtml='<img class="modal-img" src="'+imgs[0]+'" alt="">';
+  }
+
+  // Bouton modifier (seulement si connecté et propriétaire)
+  var editBtn='';
+  if(currentUser && item.user_id===currentUser.id){
+    editBtn='<button class="btn-edit" onclick=\'openEditModal('+JSON.stringify(item).replace(/'/g,"&#39;")+')\'>✎ MODIFIER</button>';
+  }
+
+  document.getElementById('modal-body').innerHTML=
+    galleryHtml+
+    '<div class="detail-row">'+
+    '<div class="detail-block"><label>UNIVERS</label><span style="color:var(--blue2)">'+(U_LABEL[item.universe]||'—')+'</span></div>'+
+    '<div class="detail-block"><label>STATUT</label><span>'+(SLBL[item.status]||'—')+'</span></div>'+
+    '<div class="detail-block"><label>ARTISTE / BRAND</label><span>'+(item.brand||'—')+'</span></div>'+
+    '<div class="detail-block"><label>TYPE</label><span>'+(item.product_type||'—')+'</span></div>'+
+    '<div class="detail-block"><label>ANNÉE</label><span>'+(item.year||'—')+'</span></div>'+
+    (item.tee_brand?'<div class="detail-block"><label>TEE MFR</label><span>'+item.tee_brand+'</span></div>':'')+
+    '</div>'+
+    (item.description?'<div class="detail-desc"><label>DESCRIPTION</label><p>'+item.description+'</p></div>':'')+
+    (tags.length?'<div class="modal-tags">'+tags.map(function(t){return'<span class="tag">'+t+'</span>';}).join('')+'</div>':'')+
+    '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;">'+
+    (item.link?'<a class="modal-link" href="'+item.link+'" target="_blank" rel="noopener">VOIR LA RÉFÉRENCE →</a>':'')+
+    editBtn+
+    '<span style="font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);">BY '+(item.contributor_email?item.contributor_email.split('@')[0].toUpperCase():'ANON')+'</span>'+
+    '</div>';
+  document.getElementById('modal').classList.add('open');
+}
+
+function switchModalImg(thumb, url){
+  document.getElementById('modal-main-img').src=url;
+  document.querySelectorAll('.photo-thumb').forEach(function(t){t.classList.remove('active');});
+  thumb.classList.add('active');
+}
+
+// ═══════════════════════════════════
+// EDIT MODAL
+// ═══════════════════════════════════
+var editNewFiles=[];
+var editExistingUrls=[];
+var editItemData=null;
+
+function openEditModal(item){
+  editItemData=item;
+  editNewFiles=[];
+
+  // Pré-remplir le formulaire
+  document.getElementById('edit-item-id').value=item.id;
+  document.getElementById('edit-name').value=item.name||'';
+  document.getElementById('edit-brand').value=item.brand||'';
+  document.getElementById('edit-universe').value=item.universe||'musique';
+  document.getElementById('edit-status').value=item.status||'retail';
+  document.getElementById('edit-type').value=item.product_type||'';
+  document.getElementById('edit-year').value=item.year||'';
+  document.getElementById('edit-desc').value=item.description||'';
+  document.getElementById('edit-link').value=item.link||'';
+
+  // Photos existantes
+  editExistingUrls=item.image_urls&&item.image_urls.length ? item.image_urls : (item.image_url?[item.image_url]:[]);
+  renderEditPhotos();
+
+  document.getElementById('edit-new-previews').innerHTML='';
+  document.getElementById('edit-alert').className='alert';
+  document.getElementById('edit-modal').classList.add('open');
+  document.getElementById('modal').classList.remove('open');
+}
+
+function renderEditPhotos(){
+  var grid=document.getElementById('edit-photos-grid');
+  if(!editExistingUrls.length){grid.innerHTML='<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);">AUCUNE PHOTO</span>';return;}
+  grid.innerHTML=editExistingUrls.map(function(url,i){
+    return '<div class="photo-thumb-wrap">'+
+      '<img class="photo-thumb active" src="'+url+'">'+
+      '<button class="photo-del" onclick="removeExistingPhoto('+i+')" title="Supprimer">×</button>'+
+      '</div>';
+  }).join('');
+}
+
+function removeExistingPhoto(idx){
+  editExistingUrls.splice(idx,1);
+  renderEditPhotos();
+}
+
+function previewEditImgs(input){
+  var files=Array.from(input.files);
+  var total=editExistingUrls.length+editNewFiles.length+files.length;
+  if(total>5){showAlert('edit-alert','Maximum 5 photos par item','err');return;}
+  editNewFiles=editNewFiles.concat(files);
+  var prev=document.getElementById('edit-new-previews');
+  prev.innerHTML='';
+  editNewFiles.forEach(function(f,i){
+    var r=new FileReader();
+    r.onload=function(e){
+      var wrap=document.createElement('div');
+      wrap.className='photo-thumb-wrap';
+      wrap.innerHTML='<img class="photo-thumb active" src="'+e.target.result+'">'+
+        '<button class="photo-del" onclick="removeNewPhoto('+i+')" title="Supprimer">×</button>';
+      prev.appendChild(wrap);
     };
+    r.readAsDataURL(f);
   });
-  updateStats(); filterItems();
+}
+
+function removeNewPhoto(idx){
+  editNewFiles.splice(idx,1);
+  var input=document.getElementById('edit-img-input');
+  input.value='';
+  var prev=document.getElementById('edit-new-previews');
+  prev.innerHTML='';
+  editNewFiles.forEach(function(f,i){
+    var r=new FileReader();
+    r.onload=function(e){
+      var wrap=document.createElement('div');
+      wrap.className='photo-thumb-wrap';
+      wrap.innerHTML='<img class="photo-thumb active" src="'+e.target.result+'">'+
+        '<button class="photo-del" onclick="removeNewPhoto('+i+')" title="Supprimer">×</button>';
+      prev.appendChild(wrap);
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+function closeEditModal(e){
+  if(e.target.id==='edit-modal') document.getElementById('edit-modal').classList.remove('open');
+}
+
+async function saveEdit(e){
+  e.preventDefault();
+  if(!configured||!currentUser){showAlert('edit-alert','Non connecté','err');return;}
+  var btn=e.target.querySelector('[type=submit]');
+  btn.textContent='SAUVEGARDE...'; btn.disabled=true;
+
+  // Upload nouvelles photos
+  var newUrls=[];
+  for(var i=0;i<editNewFiles.length;i++){
+    var f=editNewFiles[i];
+    var ext=f.name.split('.').pop();
+    var fn=Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+ext;
+    var ur=await sb.storage.from('merch-images').upload(fn,f);
+    if(!ur.error){
+      var ud=sb.storage.from('merch-images').getPublicUrl(fn);
+      newUrls.push(ud.data.publicUrl);
+    }
+  }
+
+  var allUrls=editExistingUrls.concat(newUrls);
+
+  var payload={
+    name:document.getElementById('edit-name').value,
+    brand:document.getElementById('edit-brand').value,
+    universe:document.getElementById('edit-universe').value,
+    status:document.getElementById('edit-status').value,
+    product_type:document.getElementById('edit-type').value,
+    year:parseInt(document.getElementById('edit-year').value)||null,
+    description:document.getElementById('edit-desc').value,
+    link:document.getElementById('edit-link').value,
+    image_urls:allUrls,
+    image_url:allUrls[0]||null
+  };
+
+  var id=document.getElementById('edit-item-id').value;
+  var r=await sb.from('merch_items').update(payload).eq('id',id).eq('user_id',currentUser.id);
+
+  btn.textContent='SAUVEGARDER →'; btn.disabled=false;
+
+  if(r.error){showAlert('edit-alert','ERREUR: '+r.error.message,'err');}
+  else{
+    showAlert('edit-alert','SAUVEGARDÉ !','ok');
+    await loadItems();
+    setTimeout(function(){document.getElementById('edit-modal').classList.remove('open');},1000);
+  }
+}
+
+async function deleteItem(){
+  if(!confirm('Supprimer cet item ? Cette action est irréversible.')) return;
+  if(!configured||!currentUser) return;
+  var id=document.getElementById('edit-item-id').value;
+  var r=await sb.from('merch_items').delete().eq('id',id).eq('user_id',currentUser.id);
+  if(r.error){showAlert('edit-alert','ERREUR: '+r.error.message,'err');}
+  else{
+    document.getElementById('edit-modal').classList.remove('open');
+    await loadItems();
+  }
 }
 
 // ═══════════════════════════════════
