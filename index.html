@@ -1139,6 +1139,8 @@
               </div>
             </div>
             <button type="submit" class="btn-primary" style="margin-top:20px;">SOUMETTRE À L'ARCHIVE →</button>
+<input type="hidden" id="item-group-id-forced" value="">
+<input type="hidden" id="add-return-group" value="">
           </form>
         </div>
       </div>
@@ -2299,8 +2301,10 @@ async function browseGroup(groupId) {
         '<span>CRÉER UN SOUS-GROUPE</span></div>' : '')+
       '</div>' : '')+
     '<div style="margin-top:32px">'+
-    '<div class="sec-head"><h2>'+group.name.toUpperCase()+'</h2>'+
-    '<span>'+(linkedItems.length||0)+' ITEMS</span></div>'+
+    '<div class="sec-head" style="align-items:center;"><h2>'+group.name.toUpperCase()+'</h2>'+
+'<div style="display:flex;align-items:center;gap:10px;"><span>'+(linkedItems.length||0)+' ITEMS</span>'+
+(currentUser ? '<button class="btn-edit" onclick="openAddItemInGroup(\''+groupId+'\',\''+group.universe+'\',\''+group.name+'\')">+ AJOUTER UN ITEM</button>' : '')+
+'</div></div>'+
     (linkedItems.length ?
       '<div class="merch-grid" id="browse-items-grid"></div>' :
       '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p>AUCUN ITEM ASSOCIÉ À CE GROUPE</p>'+
@@ -2422,6 +2426,14 @@ async function deleteGroup(groupId) {
   if (btn && activeU) setU(btn, activeU);
   else if (document.getElementById('section-browse').classList.contains('active')) showBrowse();
 }
+  function openAddItemInGroup(groupId, universe, groupName) {
+  if (!currentUser) { showSection('auth'); return; }
+  showSection('add');
+  var uSelect = document.getElementById('item-universe');
+  if (uSelect) { uSelect.value = universe; buildTags(universe); }
+  document.getElementById('item-group-id-forced').value = groupId;
+  document.getElementById('add-return-group').value = groupId;
+  window.scrollTo(0,0);
 async function submitGroup(e) {
   e.preventDefault();
   if (!configured || !currentUser) { showAlert('group-alert','Connexion requise','err'); return; }
