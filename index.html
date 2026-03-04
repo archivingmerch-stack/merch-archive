@@ -1210,6 +1210,16 @@
         <div style="margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid var(--border);">
           <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-bottom:6px;">EMAIL</div>
           <div id="account-email" style="font-size:15px;color:var(--blue2);font-family:'DM Mono',monospace;">—</div>
+        <div style="margin-top:16px;display:flex;align-items:center;gap:16px;">
+          <div style="position:relative;width:64px;height:64px;">
+            <img id="account-avatar" src="" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;background:var(--panel);display:none;">
+            <div id="account-avatar-placeholder" style="width:64px;height:64px;border-radius:50%;background:var(--panel);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--muted);">◈</div>
+          </div>
+          <div style="flex:1;">
+            <div id="account-pseudo-display" style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--white);margin-bottom:6px;">—</div>
+            <button onclick="openEditProfile()" class="btn-edit" style="font-size:9px;">✎ MODIFIER LE PROFIL</button>
+          </div>
+        </div>
         </div>
         <div style="margin-bottom:24px;">
           <div style="display:flex;gap:2px;margin-bottom:16px;">
@@ -1225,7 +1235,29 @@
   </section>
 
 </main>
-
+<!-- EDIT PROFILE MODAL -->
+<div id="edit-profile-modal" style="display:none;position:fixed;inset:0;background:rgba(4,6,15,.92);z-index:9999;display:none;align-items:center;justify-content:center;" onclick="if(event.target===this)closeEditProfile()">
+  <div style="background:var(--panel);border:1px solid var(--border);width:100%;max-width:440px;padding:32px;position:relative;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;">MON PROFIL</div>
+      <button onclick="closeEditProfile()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <div class="alert" id="profile-alert"></div>
+    <div style="margin-bottom:16px;text-align:center;">
+      <img id="profile-preview-img" src="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;display:none;margin:0 auto 10px;">
+      <div id="profile-preview-placeholder" style="width:80px;height:80px;border-radius:50%;background:var(--navy);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--muted);margin:0 auto 10px;">◈</div>
+      <label style="cursor:pointer;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--blue2);">
+        ↑ CHANGER LA PHOTO
+        <input type="file" id="profile-img-input" accept="image/*" style="display:none;" onchange="previewProfileImg(this)">
+      </label>
+    </div>
+    <div class="fgroup" style="margin-bottom:16px;">
+      <label>PSEUDO <small style="color:var(--muted);font-size:9px;">(soumis à modération)</small></label>
+      <input type="text" id="profile-pseudo-input" placeholder="ton pseudo..." maxlength="30">
+    </div>
+    <button onclick="saveProfile()" class="btn-primary" style="width:100%;">SAUVEGARDER →</button>
+  </div>
+</div>
 <!-- CREATE GROUP MODAL -->
 <div class="create-group-modal-bg" id="create-group-modal" onclick="closeCreateGroupModal(event)">
   <div class="create-group-modal">
@@ -1494,7 +1526,7 @@ function showSection(name) {
     document.getElementById('add-form-wrap').style.display = gated?'none':'block';
   }
   if (name==='auth') {
-    if (currentUser) { toggleAuth('account'); loadMyContributions(); }
+    if (currentUser) { toggleAuth('account'); loadMyContributions(); loadProfile(); showProfileTab('contributions'); }
     else { toggleAuth('login'); }
   }
   if (name==='browse') { showBrowse(); }
@@ -1608,6 +1640,77 @@ async function loadMyCollection() {
       (sl ? '<span class="card-status '+sc+'" style="position:static;font-size:8px;">'+sl+'</span>' : '')+
       '</div>';
   }).join('');
+}
+  var userProfile = null;
+
+async function loadProfile() {
+  if (!currentUser || !configured) return;
+  var r = await sb.from('profiles').select('*').eq('id', currentUser.id).single();
+  if (r.data) {
+    userProfile = r.data;
+    var pseudo = r.data.pseudo_approved ? r.data.pseudo : (r.data.pseudo ? '⏳ '+r.data.pseudo : '—');
+    document.getElementById('account-pseudo-display').textContent = pseudo;
+    if (r.data.avatar_url) {
+      document.getElementById('account-avatar').src = r.data.avatar_url;
+      document.getElementById('account-avatar').style.display = 'block';
+      document.getElementById('account-avatar-placeholder').style.display = 'none';
+    }
+  }
+}
+
+function openEditProfile() {
+  if (userProfile) {
+    document.getElementById('profile-pseudo-input').value = userProfile.pseudo || '';
+    if (userProfile.avatar_url) {
+      document.getElementById('profile-preview-img').src = userProfile.avatar_url;
+      document.getElementById('profile-preview-img').style.display = 'block';
+      document.getElementById('profile-preview-placeholder').style.display = 'none';
+    }
+  }
+  document.getElementById('edit-profile-modal').style.display = 'flex';
+}
+
+function closeEditProfile() {
+  document.getElementById('edit-profile-modal').style.display = 'none';
+}
+
+function previewProfileImg(input) {
+  if (input.files[0]) {
+    var r = new FileReader();
+    r.onload = function(e) {
+      document.getElementById('profile-preview-img').src = e.target.result;
+      document.getElementById('profile-preview-img').style.display = 'block';
+      document.getElementById('profile-preview-placeholder').style.display = 'none';
+    };
+    r.readAsDataURL(input.files[0]);
+  }
+}
+
+async function saveProfile() {
+  if (!currentUser || !configured) return;
+  var btn = document.querySelector('#edit-profile-modal .btn-primary');
+  btn.textContent = 'SAUVEGARDE...'; btn.disabled = true;
+  var avatar_url = userProfile ? userProfile.avatar_url : null;
+  var file = document.getElementById('profile-img-input').files[0];
+  if (file) {
+    var ext = file.name.split('.').pop();
+    var fn = 'avatar-' + currentUser.id + '.' + ext;
+    var ur = await sb.storage.from('merch-images').upload(fn, file, {upsert: true});
+    if (!ur.error) {
+      var ud = sb.storage.from('merch-images').getPublicUrl(fn);
+      avatar_url = ud.data.publicUrl;
+    }
+  }
+  var pseudo = document.getElementById('profile-pseudo-input').value.trim();
+  var payload = { id: currentUser.id, avatar_url: avatar_url, pseudo: pseudo, pseudo_approved: false };
+  var r = await sb.from('profiles').upsert([payload]);
+  btn.textContent = 'SAUVEGARDER →'; btn.disabled = false;
+  if (r.error) { showAlert('profile-alert', 'ERREUR: '+r.error.message, 'err'); }
+  else {
+    showAlert('profile-alert', '✓ PROFIL SAUVEGARDÉ — pseudo en attente de validation', 'ok');
+    await loadProfile();
+    setTimeout(closeEditProfile, 1800);
+  }
 }
 function openMyItem(itemId) {
   var item = allItems.find(function(i){ return i.id === itemId; });
