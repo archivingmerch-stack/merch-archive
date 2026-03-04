@@ -1619,13 +1619,14 @@ function setU(btn,u){
     var groups = allGroups.filter(function(g){ return g.universe===u && g.level===1; });
     if (groups.length) {
       groupsBand.innerHTML =
-        '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">'+
+        '<div style="display:flex;flex-wrap:wrap;gap:1px;margin-bottom:16px;">'+
         groups.map(function(g){
           return '<div onclick="showSection(\'browse\');browseGroup(\''+g.id+'\')" '+
-            'style="cursor:pointer;padding:8px 16px;background:var(--panel);border:1px solid var(--border);'+
-            'font-family:\'Bebas Neue\',sans-serif;font-size:14px;letter-spacing:2px;color:var(--white);'+
-            'transition:all .15s;" onmouseover="this.style.borderColor=\'var(--blue)\'" onmouseout="this.style.borderColor=\'var(--border)\'">'+
-            g.name+'</div>';
+  'style="cursor:pointer;width:140px;flex-shrink:0;background:var(--panel);border:1px solid var(--border);position:relative;overflow:hidden;transition:all .15s;" '+
+  'onmouseover="this.style.borderColor=\'var(--blue)\'" onmouseout="this.style.borderColor=\'var(--border)\'">'+
+  (g.image_url ? '<img src="'+g.image_url+'" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;opacity:.7;">' : '<div style="width:100%;aspect-ratio:1;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:28px;">'+U_ICON[g.universe]+'</div>')+
+  '<div style="padding:8px 10px;font-family:\'Bebas Neue\',sans-serif;font-size:13px;letter-spacing:2px;color:var(--white);">'+g.name+'</div>'+
+  '</div>';
         }).join('')+
         '</div>';
       groupsBand.style.display = 'block';
