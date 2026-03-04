@@ -2354,7 +2354,17 @@ function openCreateGroup(universe, parentId, level) {
 function closeCreateGroupModal(e) {
   if (e.target.id==='create-group-modal') document.getElementById('create-group-modal').classList.remove('open');
 }
-
+async function deleteGroup(groupId) {
+  if (!isAdmin()) return;
+  if (!confirm('Supprimer ce groupe ?')) return;
+  await sb.from('item_groups').delete().eq('group_id', groupId);
+  await sb.from('groups').delete().eq('id', groupId);
+  allGroups = [];
+  await loadGroups();
+  var btn = document.querySelector('.upill.active');
+  if (btn && activeU) setU(btn, activeU);
+  else if (document.getElementById('section-browse').classList.contains('active')) showBrowse();
+}
 async function submitGroup(e) {
   e.preventDefault();
   if (!configured || !currentUser) { showAlert('group-alert','Connexion requise','err'); return; }
