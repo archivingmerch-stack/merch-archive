@@ -2434,6 +2434,7 @@ async function deleteGroup(groupId) {
   document.getElementById('item-group-id-forced').value = groupId;
   document.getElementById('add-return-group').value = groupId;
   window.scrollTo(0,0);
+    }
 async function submitGroup(e) {
   e.preventDefault();
   if (!configured || !currentUser) { showAlert('group-alert','Connexion requise','err'); return; }
