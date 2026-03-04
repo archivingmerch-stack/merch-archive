@@ -1139,6 +1139,12 @@
               </div>
             </div>
             <button type="submit" class="btn-primary" style="margin-top:20px;">SOUMETTRE À L'ARCHIVE →</button>
+            <div class="fgroup form-full" id="group-select-wrap" style="display:none">
+  <label>RATTACHER À UN GROUPE <small style="color:var(--muted);font-size:9px;">(optionnel)</small></label>
+  <select id="item-group-id">
+    <option value="">— Aucun groupe —</option>
+  </select>
+</div>
 <input type="hidden" id="item-group-id-forced" value="">
 <input type="hidden" id="add-return-group" value="">
           </form>
@@ -1774,6 +1780,21 @@ function onUniChange(){
   var isTee=['T-shirt','Hoodie / Sweatshirt','Jacket'].includes(document.getElementById('item-type').value);
   document.getElementById('tee-wrap').style.display=isTee?'block':'none';
   buildTags(u);
+  var forced = document.getElementById('item-group-id-forced').value;
+  if (!forced && u) {
+    var groups = allGroups.filter(function(g){ return g.universe===u; });
+    var wrap = document.getElementById('group-select-wrap');
+    var sel = document.getElementById('item-group-id');
+    if (groups.length && wrap && sel) {
+      sel.innerHTML = '<option value="">— Aucun groupe —</option>'+
+        groups.map(function(g){
+          return '<option value="'+g.id+'">'+(g.level===2?'  ↳ ':'')+g.name+'</option>';
+        }).join('');
+      wrap.style.display = 'block';
+    } else if (wrap) {
+      wrap.style.display = 'none';
+    }
+  }
 }
 document.getElementById('item-type').addEventListener('change',function(){
   var isTee=['T-shirt','Hoodie / Sweatshirt','Jacket'].includes(this.value);
@@ -1837,9 +1858,12 @@ async function submitMerch(e){
   if(r.error){showAlert('add-alert','ERREUR: '+r.error.message,'err');}
   else{
     var forcedGroup = document.getElementById('item-group-id-forced').value;
-if (forcedGroup && r.data && r.data[0]) {
-  await sb.from('item_groups').insert([{item_id: r.data[0].id, group_id: forcedGroup}]);
+var selGroup = document.getElementById('item-group-id') ? document.getElementById('item-group-id').value : '';
+var groupId = forcedGroup || selGroup;
+if (groupId && r.data && r.data[0]) {
+  await sb.from('item_groups').insert([{item_id: r.data[0].id, group_id: groupId}]);
 }
+document.getElementById('group-select-wrap').style.display = 'none';
 var returnGroup = document.getElementById('add-return-group').value;
 document.getElementById('item-group-id-forced').value = '';
 document.getElementById('add-return-group').value = '';
