@@ -1605,21 +1605,39 @@ function setU(btn,u){
   document.querySelectorAll('.upill').forEach(function(p){p.classList.remove('active');});
   btn.classList.add('active');
   filterItems();
-  // Bandeau créer un groupe
+  // Bandeau groupes + CTA
   var cta = document.getElementById('universe-cta');
-  if (cta) {
-    if (u) {
-      cta.style.display = 'flex';
-      var L = typeof LANG !== 'undefined' ? LANG[currentLang] : null;
-      var cantFind = L ? L.cant_find : "Can't find your artist, saga or series? Create it!";
-      var createTxt = L ? L.create_group : 'CREATE A GROUP';
-      var loginTxt = L ? L.login_to_create : 'LOGIN TO CREATE';
-      document.getElementById('universe-cta-text').textContent = cantFind;
-      document.getElementById('universe-cta-btn').textContent = (currentUser ? createTxt : loginTxt) + ' →';
-    } else {
-      cta.style.display = 'none';
-    }
+  var groupsBand = document.getElementById('explorer-groups-band');
+  if (!groupsBand) {
+    groupsBand = document.createElement('div');
+    groupsBand.id = 'explorer-groups-band';
+    groupsBand.style.cssText = 'margin-bottom:24px;';
+    var grid = document.getElementById('merch-grid');
+    grid.parentNode.insertBefore(groupsBand, grid);
   }
+  if (u) {
+    var groups = allGroups.filter(function(g){ return g.universe===u && g.level===1; });
+    if (groups.length) {
+      groupsBand.innerHTML =
+        '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">'+
+        groups.map(function(g){
+          return '<div onclick="showSection(\'browse\');browseGroup(\''+g.id+'\')" '+
+            'style="cursor:pointer;padding:8px 16px;background:var(--panel);border:1px solid var(--border);'+
+            'font-family:\'Bebas Neue\',sans-serif;font-size:14px;letter-spacing:2px;color:var(--white);'+
+            'transition:all .15s;" onmouseover="this.style.borderColor=\'var(--blue)\'" onmouseout="this.style.borderColor=\'var(--border)\'">'+
+            g.name+'</div>';
+        }).join('')+
+        '</div>';
+      groupsBand.style.display = 'block';
+    } else {
+      groupsBand.style.display = 'none';
+    }
+    if (cta) cta.style.display = 'flex';
+  } else {
+    groupsBand.style.display = 'none';
+    if (cta) cta.style.display = 'none';
+  }
+}
 }
 function filterItems(){
   var q=document.getElementById('search-input').value.toLowerCase();
