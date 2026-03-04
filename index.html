@@ -1680,6 +1680,7 @@ async function loadItems(){
   if(r.error){document.getElementById('merch-grid').innerHTML='<div class="loading-state">ERREUR</div>';return;}
   allItems=r.data||[];
   updateStats(); filterItems();
+  renderCarouselItems();
 }
 function updateStats(){
   document.getElementById('stat-total').textContent=allItems.length;
@@ -2601,8 +2602,15 @@ async function submitGroup(e) {
   btn.textContent = LANG[currentLang].group_submit; btn.disabled = false;
   if (r.error) { showAlert('group-alert','ERREUR: '+r.error.message,'err'); }
   else {
-    showAlert('group-alert', LANG[currentLang].group_submitted, 'ok');
-    setTimeout(function(){ document.getElementById('create-group-modal').classList.remove('open'); }, 1800);
+    allGroups = [];
+    await loadGroups();
+    renderCarouselGroups();
+    showAlert('group-alert','✓ GROUPE CRÉÉ !','ok');
+    setTimeout(function(){
+      document.getElementById('create-group-modal').classList.remove('open');
+      var btn2 = document.querySelector('.upill.active');
+      if (btn2 && activeU) setU(btn2, activeU);
+    }, 1200);
   }
 }
 
