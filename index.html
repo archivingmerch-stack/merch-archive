@@ -1452,8 +1452,8 @@ if (configured) {
     var r = await sb.auth.getSession();
     if (r.data.session) setUser(r.data.session.user);
     sb.auth.onAuthStateChange(function(ev,sess){ sess ? setUser(sess.user) : clearUser(); });
-await loadItems();
-await loadGroups();
+    await loadItems();
+    await loadGroups();
   })();
 } else {
   loadDemo();
