@@ -886,7 +886,13 @@
       <button class="nav-btn" onclick="showSection('browse')" data-i18n="nav_browse">UNIVERS</button>
       <button class="nav-btn" onclick="showSection('add')" data-i18n="nav_add">+ SOUMETTRE</button>
       <button class="nav-btn admin-nav" id="nav-admin" style="display:none" onclick="showSection('admin')">⚡ ADMIN</button>
-      <button class="nav-btn cta" onclick="showSection('auth')" id="nav-auth" data-i18n="nav_login">CONNEXION</button>
+      <button class="nav-btn cta" onclick="showSection('auth')" id="nav-auth" data-i18n="nav_login">
+  <span id="nav-avatar-wrap" style="display:none;align-items:center;gap:6px;">
+    <img id="nav-avatar" src="" style="width:20px;height:20px;border-radius:50%;object-fit:cover;border:1px solid var(--blue);">
+    <span id="nav-pseudo">COMPTE</span>
+  </span>
+  <span id="nav-login-text">CONNEXION</span>
+</button>
       <button class="nav-btn" id="lang-btn" onclick="toggleLang()" style="border-color:var(--mid);color:var(--muted);font-size:9px;letter-spacing:3px;padding:7px 10px;">FR</button>
     </div>
   </div>
@@ -1547,6 +1553,12 @@ async function loadMyContributions() {
   var el = document.getElementById('my-contributions');
   if (!el) return;
   document.getElementById('account-email').textContent = currentUser.email;
+  document.getElementById('nav-pseudo').textContent = r.data.pseudo_approved ? r.data.pseudo : 'COMPTE';
+    if (r.data.avatar_url) {
+      document.getElementById('nav-avatar').src = r.data.avatar_url;
+      document.getElementById('nav-avatar-wrap').style.display = 'inline-flex';
+      document.getElementById('nav-login-text').style.display = 'none';
+    }
   el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);">CHARGEMENT...</div>';
   var r = await sb.from('merch_items').select('id,name,brand,universe,year,image_url,status').eq('user_id', currentUser.id).order('created_at',{ascending:false});
   var items = r.data || [];
