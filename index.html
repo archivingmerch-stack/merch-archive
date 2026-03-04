@@ -1208,10 +1208,12 @@
           <div id="account-email" style="font-size:15px;color:var(--blue2);font-family:'DM Mono',monospace;">—</div>
         </div>
         <div style="margin-bottom:24px;">
-          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;color:var(--white);margin-bottom:14px;">MES CONTRIBUTIONS</div>
-          <div id="my-contributions" style="display:flex;flex-direction:column;gap:8px;">
-            <div style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);">CHARGEMENT...</div>
-          </div>
+          <div style="display:flex;gap:2px;margin-bottom:16px;">
+  <button onclick="showProfileTab('contributions')" id="tab-contributions" style="flex:1;padding:10px;background:var(--blue);border:none;color:#fff;font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;cursor:pointer;">MES CONTRIBUTIONS</button>
+  <button onclick="showProfileTab('collection')" id="tab-collection" style="flex:1;padding:10px;background:var(--panel);border:1px solid var(--border);color:var(--muted);font-family:'Bebas Neue',sans-serif;font-size:14px;letter-spacing:2px;cursor:pointer;">MA COLLECTION</button>
+</div>
+<div id="my-contributions" style="display:flex;flex-direction:column;gap:8px;"></div>
+<div id="my-collection" style="display:none;flex-direction:column;gap:8px;"></div>
         </div>
         <button class="btn-danger" style="width:100%;justify-content:center;margin-top:8px;" onclick="logout()">SE DÉCONNECTER</button>
       </div>
@@ -1556,6 +1558,42 @@ async function loadMyCollection() {
     var sc = SCLS[item.status]||'s-retail';
     var sl = SLBL[item.status]||'';
     return '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--navy);border:1px solid var(--border);cursor:pointer;" onclick="openMyItem(\''+item.id+'\')">'+
+      (item.image_url ?
+        '<img src="'+item.image_url+'" style="width:48px;height:48px;object-fit:cover;flex-shrink:0;">' :
+        '<div style="width:48px;height:48px;background:var(--panel);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;color:var(--border);">'+(U_ICON[item.universe]||'◈')+'</div>')+
+      '<div style="flex:1;min-width:0;">'+
+        '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;letter-spacing:2px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(item.name||'—')+'</div>'+
+        '<div style="font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">'+(U_LABEL[item.universe]||'')+(item.brand?' · '+item.brand:'')+(item.year?' · '+item.year:'')+'</div>'+
+      '</div>'+
+      (sl ? '<span class="card-status '+sc+'" style="position:static;font-size:8px;">'+sl+'</span>' : '')+
+      '</div>';
+  }).join('');
+}
+  function showProfileTab(tab) {
+  document.getElementById('my-contributions').style.display = tab==='contributions' ? 'flex' : 'none';
+  document.getElementById('my-collection').style.display = tab==='collection' ? 'flex' : 'none';
+  document.getElementById('tab-contributions').style.background = tab==='contributions' ? 'var(--blue)' : 'var(--panel)';
+  document.getElementById('tab-contributions').style.color = tab==='contributions' ? '#fff' : 'var(--muted)';
+  document.getElementById('tab-collection').style.background = tab==='collection' ? 'var(--blue)' : 'var(--panel)';
+  document.getElementById('tab-collection').style.color = tab==='collection' ? '#fff' : 'var(--muted)';
+  if (tab==='collection') loadMyCollection();
+}
+
+async function loadMyCollection() {
+  var el = document.getElementById('my-collection');
+  if (!el || !currentUser || !configured) return;
+  el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);">CHARGEMENT...</div>';
+  var r = await sb.from('collections').select('item_id').eq('user_id', currentUser.id).order('created_at',{ascending:false});
+  var ids = (r.data||[]).map(function(x){ return x.item_id; });
+  if (!ids.length) {
+    el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);padding:20px 0;text-align:center;">COLLECTION VIDE</div>';
+    return;
+  }
+  var items = allItems.filter(function(i){ return ids.includes(i.id); });
+  el.innerHTML = items.map(function(item){
+    var sc = SCLS[item.status]||'s-retail';
+    var sl = SLBL[item.status]||'';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--navy);border:1px solid var(--border);cursor:pointer;margin-bottom:4px;" onclick="openMyItem(\''+item.id+'\')">'+
       (item.image_url ?
         '<img src="'+item.image_url+'" style="width:48px;height:48px;object-fit:cover;flex-shrink:0;">' :
         '<div style="width:48px;height:48px;background:var(--panel);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;color:var(--border);">'+(U_ICON[item.universe]||'◈')+'</div>')+
