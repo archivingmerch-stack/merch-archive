@@ -959,6 +959,13 @@
     <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:4px;color:var(--white);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">GROUPES RÉCENTS</div>
     <div id="carousel-groups" style="display:flex;gap:1px;overflow-x:auto;scrollbar-width:none;background:var(--border);"></div>
   </div>
+  <div id="carousel-items-sec" style="margin-bottom:32px;">
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:4px;color:var(--white);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border);">ITEMS RÉCENTS</div>
+    <div id="carousel-items" style="display:flex;gap:1px;overflow-x:auto;scrollbar-width:none;background:var(--border);"></div>
+  </div>
+</div>
+
+    <!-- BANDEAU CRÉER UN GROUPE — visible quand un univers est sélectionné -->
     <div id="universe-cta" style="display:none;margin-top:20px;padding:14px 22px;border:1px dashed var(--mid);background:rgba(61,127,255,.04); align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
       <span id="universe-cta-text" style="font-family:'DM Mono',monospace;font-size:11px;letter-spacing:2px;color:var(--soft);text-transform:uppercase;">Can't find your artist, saga or series? Create it!</span>
       <button id="universe-cta-btn" class="btn-edit" onclick="handleUniverseCTA()">CREATE A GROUP →</button>
@@ -1553,6 +1560,42 @@ async function loadMyCollection() {
     var sc = SCLS[item.status]||'s-retail';
     var sl = SLBL[item.status]||'';
     return '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--navy);border:1px solid var(--border);cursor:pointer;" onclick="openMyItem(\''+item.id+'\')">'+
+      (item.image_url ?
+        '<img src="'+item.image_url+'" style="width:48px;height:48px;object-fit:cover;flex-shrink:0;">' :
+        '<div style="width:48px;height:48px;background:var(--panel);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;color:var(--border);">'+(U_ICON[item.universe]||'◈')+'</div>')+
+      '<div style="flex:1;min-width:0;">'+
+        '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:16px;letter-spacing:2px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+(item.name||'—')+'</div>'+
+        '<div style="font-family:\'DM Mono\',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;">'+(U_LABEL[item.universe]||'')+(item.brand?' · '+item.brand:'')+(item.year?' · '+item.year:'')+'</div>'+
+      '</div>'+
+      (sl ? '<span class="card-status '+sc+'" style="position:static;font-size:8px;">'+sl+'</span>' : '')+
+      '</div>';
+  }).join('');
+}
+  function showProfileTab(tab) {
+  document.getElementById('my-contributions').style.display = tab==='contributions' ? 'flex' : 'none';
+  document.getElementById('my-collection').style.display = tab==='collection' ? 'flex' : 'none';
+  document.getElementById('tab-contributions').style.background = tab==='contributions' ? 'var(--blue)' : 'var(--panel)';
+  document.getElementById('tab-contributions').style.color = tab==='contributions' ? '#fff' : 'var(--muted)';
+  document.getElementById('tab-collection').style.background = tab==='collection' ? 'var(--blue)' : 'var(--panel)';
+  document.getElementById('tab-collection').style.color = tab==='collection' ? '#fff' : 'var(--muted)';
+  if (tab==='collection') loadMyCollection();
+}
+
+async function loadMyCollection() {
+  var el = document.getElementById('my-collection');
+  if (!el || !currentUser || !configured) return;
+  el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);">CHARGEMENT...</div>';
+  var r = await sb.from('collections').select('item_id').eq('user_id', currentUser.id).order('created_at',{ascending:false});
+  var ids = (r.data||[]).map(function(x){ return x.item_id; });
+  if (!ids.length) {
+    el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);padding:20px 0;text-align:center;">COLLECTION VIDE</div>';
+    return;
+  }
+  var items = allItems.filter(function(i){ return ids.includes(i.id); });
+  el.innerHTML = items.map(function(item){
+    var sc = SCLS[item.status]||'s-retail';
+    var sl = SLBL[item.status]||'';
+    return '<div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--navy);border:1px solid var(--border);cursor:pointer;margin-bottom:4px;" onclick="openMyItem(\''+item.id+'\')">'+
       (item.image_url ?
         '<img src="'+item.image_url+'" style="width:48px;height:48px;object-fit:cover;flex-shrink:0;">' :
         '<div style="width:48px;height:48px;background:var(--panel);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;color:var(--border);">'+(U_ICON[item.universe]||'◈')+'</div>')+
