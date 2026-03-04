@@ -1469,8 +1469,9 @@ if (configured) {
     var r = await sb.auth.getSession();
     if (r.data.session) setUser(r.data.session.user);
     sb.auth.onAuthStateChange(function(ev,sess){ sess ? setUser(sess.user) : clearUser(); });
-    await loadItems();
+await loadItems();
 await loadGroups();
+await loadCollection();
 renderCarouselGroups();
 renderCarouselItems();
   })();
@@ -1769,6 +1770,10 @@ function openModal(item){
     '<span style="font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);">BY '+(item.contributor_email?item.contributor_email.split('@')[0].toUpperCase():'ANON')+'</span>'+
     '</div>';
   document.getElementById('modal').classList.add('open');
+  var cbtn = document.getElementById('collection-btn');
+if (cbtn && item.id) {
+  cbtn.textContent = userCollection.includes(item.id) ? "✓ DANS MA COLLECTION" : "⊕ J'AI ÇA";
+}
 }
 function closeModal(e){if(e.target.id==='modal')document.getElementById('modal').classList.remove('open');}
 
@@ -1926,13 +1931,35 @@ function openModal(item){
     (item.description?'<div class="detail-desc"><label>DESCRIPTION</label><p>'+item.description+'</p></div>':'')+
     (tags.length?'<div class="modal-tags">'+tags.map(function(t){return'<span class="tag">'+t+'</span>';}).join('')+'</div>':'')+
     '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px;">'+
-    (item.link?'<a class="modal-link" href="'+item.link+'" target="_blank" rel="noopener">VOIR LA RÉFÉRENCE →</a>':'')+
-    editBtn+
+(item.link?'<a class="modal-link" href="'+item.link+'" target="_blank" rel="noopener">VOIR LA RÉFÉRENCE →</a>':'')+
+editBtn+
+(currentUser ? '<button id="collection-btn" class="btn-edit" onclick="toggleCollection(\''+item.id+'\')">⊕ J\'AI ÇA</button>' : '')+
     '<span style="font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);">BY '+(item.contributor_email?item.contributor_email.split('@')[0].toUpperCase():'ANON')+'</span>'+
     '</div>';
   document.getElementById('modal').classList.add('open');
 }
+var userCollection = [];
 
+async function loadCollection() {
+  if (!currentUser || !configured) return;
+  var r = await sb.from('collections').select('item_id').eq('user_id', currentUser.id);
+  userCollection = (r.data||[]).map(function(x){ return x.item_id; });
+}
+
+async function toggleCollection(itemId) {
+  if (!currentUser) { showSection('auth'); return; }
+  var btn = document.getElementById('collection-btn');
+  var has = userCollection.includes(itemId);
+  if (has) {
+    await sb.from('collections').delete().eq('user_id', currentUser.id).eq('item_id', itemId);
+    userCollection = userCollection.filter(function(id){ return id !== itemId; });
+    if (btn) btn.textContent = "⊕ J'AI ÇA";
+  } else {
+    await sb.from('collections').insert([{user_id: currentUser.id, item_id: itemId}]);
+    userCollection.push(itemId);
+    if (btn) btn.textContent = "✓ DANS MA COLLECTION";
+  }
+}
 function switchModalImg(thumb, url){
   document.getElementById('modal-main-img').src=url;
   document.querySelectorAll('.photo-thumb').forEach(function(t){t.classList.remove('active');});
