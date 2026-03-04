@@ -1626,7 +1626,8 @@ function setU(btn,u){
   'onmouseover="this.style.borderColor=\'var(--blue)\'" onmouseout="this.style.borderColor=\'var(--border)\'">'+
   (g.image_url ? '<img src="'+g.image_url+'" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;opacity:.7;">' : '<div style="width:100%;aspect-ratio:1;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:28px;">'+U_ICON[g.universe]+'</div>')+
   '<div style="padding:8px 10px;font-family:\'Bebas Neue\',sans-serif;font-size:13px;letter-spacing:2px;color:var(--white);">'+g.name+'</div>'+
-  '</div>';
+(isAdmin() ? '<button onclick="event.stopPropagation();deleteGroup(\''+g.id+'\')" style="position:absolute;top:6px;right:6px;background:rgba(170,51,51,.9);border:none;color:#fff;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:11px;line-height:20px;text-align:center;">✕</button>' : '')+
+'</div>';
         }).join('')+
         '</div>';
       groupsBand.style.display = 'block';
@@ -2355,6 +2356,17 @@ function closeCreateGroupModal(e) {
   if (e.target.id==='create-group-modal') document.getElementById('create-group-modal').classList.remove('open');
 }
 async function deleteGroup(groupId) {
+  if (!isAdmin()) return;
+  if (!confirm('Supprimer ce groupe ?')) return;
+  await sb.from('item_groups').delete().eq('group_id', groupId);
+  await sb.from('groups').delete().eq('id', groupId);
+  allGroups = [];
+  await loadGroups();
+  var btn = document.querySelector('.upill.active');
+  if (btn && activeU) setU(btn, activeU);
+  else if (document.getElementById('section-browse').classList.contains('active')) showBrowse();
+}
+  async function deleteGroup(groupId) {
   if (!isAdmin()) return;
   if (!confirm('Supprimer ce groupe ?')) return;
   await sb.from('item_groups').delete().eq('group_id', groupId);
