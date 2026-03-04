@@ -1832,16 +1832,26 @@ async function submitMerch(e){
     tags:tags, image_url:image_url,
     user_id:currentUser.id, contributor_email:currentUser.email
   };
-  var r=await sb.from('merch_items').insert([payload]);
+  var r=await sb.from('merch_items').insert([payload]).select();
   btn.textContent='SOUMETTRE À L\'ARCHIVE →'; btn.disabled=false;
   if(r.error){showAlert('add-alert','ERREUR: '+r.error.message,'err');}
   else{
+    var forcedGroup = document.getElementById('item-group-id-forced').value;
+if (forcedGroup && r.data && r.data[0]) {
+  await sb.from('item_groups').insert([{item_id: r.data[0].id, group_id: forcedGroup}]);
+}
+var returnGroup = document.getElementById('add-return-group').value;
+document.getElementById('item-group-id-forced').value = '';
+document.getElementById('add-return-group').value = '';
     showAlert('add-alert','ITEM AJOUTÉ !','ok');
     e.target.reset();
     document.getElementById('upload-preview').style.display='none';
     document.querySelectorAll('.ttog').forEach(function(b){b.classList.remove('sel');});
     await loadItems();
-    setTimeout(function(){showSection('explore');},1200);
+    if (returnGroup) {
+  setTimeout(function(){ showSection('browse'); browseGroup(returnGroup); }, 1000);
+} else {
+  setTimeout(function(){ showSection('explore'); }, 1200);
   }
 }
 
