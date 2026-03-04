@@ -2363,7 +2363,7 @@ async function submitGroup(e) {
     level: parseInt(document.getElementById('group-level').value) || 1,
     image_url: image_url,
     created_by: currentUser.email,
-    approved: false
+    approved: true
   };
 
   var r = await sb.from('groups').insert([payload]);
