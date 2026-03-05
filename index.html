@@ -1575,7 +1575,15 @@ async function loadMyContributions() {
       '</div>';
   }).join('');
 }
-
+function showProfileTab(tab) {
+  document.getElementById('my-contributions').style.display = tab==='contributions' ? 'flex' : 'none';
+  document.getElementById('my-collection').style.display = tab==='collection' ? 'flex' : 'none';
+  document.getElementById('tab-contributions').style.background = tab==='contributions' ? 'var(--blue)' : 'var(--panel)';
+  document.getElementById('tab-contributions').style.color = tab==='contributions' ? '#fff' : 'var(--muted)';
+  document.getElementById('tab-collection').style.background = tab==='collection' ? 'var(--blue)' : 'var(--panel)';
+  document.getElementById('tab-collection').style.color = tab==='collection' ? '#fff' : 'var(--muted)';
+  if (tab==='collection') loadMyCollection();
+}
 async function loadMyCollection() {
   var el = document.getElementById('my-collection');
   if (!el || !currentUser || !configured) return;
