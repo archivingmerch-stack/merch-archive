@@ -2393,7 +2393,9 @@ function renderAdminItems(items) {
 
 async function adminDeleteItem(id) {
   if (!confirm('Supprimer définitivement cet item ?')) return;
-  await sb.from('merch_items').delete().eq('id', id);
+  await sb.from('collections').delete().eq('item_id', id);
+await sb.from('item_groups').delete().eq('item_id', id);
+await sb.from('merch_items').delete().eq('id', id);
   await loadItems();
   await loadAdminItems();
 }
