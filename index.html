@@ -1426,7 +1426,7 @@
   <div class="modal">
     <div class="modal-head">
       <div class="modal-head-title" id="modal-title">—</div>
-      <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open')">✕</button>
+      <button class="modal-close" onclick="document.getElementById('modal').classList.remove('open');history.pushState('',document.title,window.location.pathname)">✕</button>
     </div>
     <div class="modal-content" id="modal-body"></div>
   </div>
@@ -1511,6 +1511,7 @@ if (configured) {
 await loadItems();
 await loadGroups();
 await loadCollection();
+handleUrlHash();
 renderCarouselGroups();
 renderCarouselItems();
   })();
@@ -1941,6 +1942,7 @@ function openModal(item){
     (item.link?'<a class="modal-link" href="'+item.link+'" target="_blank" rel="noopener">VOIR LA RÉFÉRENCE →</a>':'')+
     '<span style="font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);">BY '+(item.contributor_email?item.contributor_email.split('@')[0].toUpperCase():'ANON')+'</span>'+
     '</div>';
+  window.location.hash = 'item/' + item.id;
   document.getElementById('modal').classList.add('open');
   var cbtn = document.getElementById('collection-btn');
 if (cbtn && item.id) {
@@ -2641,6 +2643,24 @@ function openCreateGroup(universe, parentId, level) {
 
 function closeCreateGroupModal(e) {
   if (e.target.id==='create-group-modal') document.getElementById('create-group-modal').classList.remove('open');
+}
+  function handleUrlHash() {
+  var hash = window.location.hash;
+  if (!hash) return;
+  if (hash.startsWith('#item/')) {
+    var id = hash.replace('#item/', '');
+    var item = allItems.find(function(i){ return i.id === id; });
+    if (item) openModal(item);
+  }
+  if (hash.startsWith('#group/')) {
+    var id = hash.replace('#group/', '');
+    showSection('browse');
+    browseGroup(id);
+  }
+  if (hash.startsWith('#user/')) {
+    var pseudo = hash.replace('#user/', '');
+    showPublicProfile(pseudo);
+  }
 }
 async function deleteGroup(groupId) {
   if (!isAdmin()) return;
