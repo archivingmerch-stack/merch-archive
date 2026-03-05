@@ -1949,7 +1949,7 @@ if (cbtn && item.id) {
   cbtn.textContent = userCollection.includes(item.id) ? "✓ DANS MA COLLECTION" : "⊕ J'AI ÇA";
 }
 }
-function closeModal(e){if(e.target.id==='modal')document.getElementById('modal').classList.remove('open');}
+function closeModal(e){if(e.target.id==='modal'){document.getElementById('modal').classList.remove('open');history.pushState('',document.title,window.location.pathname);}}
 
 // ═══════════════════════════════════
 // FORM
