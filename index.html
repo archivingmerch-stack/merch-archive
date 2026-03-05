@@ -2280,7 +2280,9 @@ async function deleteItem(){
   if(!confirm('Supprimer cet item ? Cette action est irréversible.')) return;
   if(!configured||!currentUser) return;
   var id=document.getElementById('edit-item-id').value;
-  var r=await sb.from('merch_items').delete().eq('id',id).eq('user_id',currentUser.id);
+  await sb.from('collections').delete().eq('item_id', id);
+await sb.from('item_groups').delete().eq('item_id', id);
+var r=await sb.from('merch_items').delete().eq('id',id).eq('user_id',currentUser.id);
   if(r.error){showAlert('edit-alert','ERREUR: '+r.error.message,'err');}
   else{
     document.getElementById('edit-modal').classList.remove('open');
@@ -2393,7 +2395,7 @@ function renderAdminItems(items) {
 
 async function adminDeleteItem(id) {
   if (!confirm('Supprimer définitivement cet item ?')) return;
-  await sb.from('collections').delete().eq('item_id', id);
+await sb.from('collections').delete().eq('item_id', id);
 await sb.from('item_groups').delete().eq('item_id', id);
 await sb.from('merch_items').delete().eq('id', id);
   await loadItems();
