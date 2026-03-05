@@ -2110,7 +2110,12 @@ editBtn+
 (currentUser ? '<button id="collection-btn" class="btn-edit" onclick="toggleCollection(\''+item.id+'\')">⊕ J\'AI ÇA</button>' : '')+
     '<span style="font-family:\'DM Mono\',monospace;font-size:10px;letter-spacing:2px;color:var(--muted);">BY '+(item.contributor_email?item.contributor_email.split('@')[0].toUpperCase():'ANON')+'</span>'+
     '</div>';
+  window.location.hash = 'item/' + item.id;
   document.getElementById('modal').classList.add('open');
+  var cbtn = document.getElementById('collection-btn');
+  if (cbtn && item.id) {
+    cbtn.textContent = userCollection.includes(item.id) ? "✓ DANS MA COLLECTION" : "⊕ J'AI ÇA";
+  }
 }
 var userCollection = [];
 
