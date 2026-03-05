@@ -1646,6 +1646,14 @@ async function loadProfile() {
     userProfile = r.data;
     var pseudo = r.data.pseudo_approved ? r.data.pseudo : (r.data.pseudo ? '⏳ '+r.data.pseudo : '—');
     document.getElementById('account-pseudo-display').textContent = pseudo;
+    if (r.data.pseudo_approved && r.data.pseudo) {
+      document.getElementById('nav-pseudo').textContent = r.data.pseudo;
+    }
+    if (r.data.avatar_url) {
+      document.getElementById('nav-avatar').src = r.data.avatar_url;
+      document.getElementById('nav-avatar-wrap').style.display = 'inline-flex';
+      document.getElementById('nav-login-text').style.display = 'none';
+    }
     if (r.data.avatar_url) {
       document.getElementById('account-avatar').src = r.data.avatar_url;
       document.getElementById('account-avatar').style.display = 'block';
@@ -1729,14 +1737,16 @@ function setUser(u){
   currentUser=u;
   document.getElementById('user-bar').classList.add('show');
   document.getElementById('user-email').textContent=u.email;
-  document.getElementById('nav-auth').textContent=LANG[currentLang].nav_account;
+  document.getElementById('nav-login-text').textContent=LANG[currentLang].nav_account;
   refreshAdminNav();
   applyLang();
 }
 function clearUser(){
   currentUser=null;
   document.getElementById('user-bar').classList.remove('show');
-  document.getElementById('nav-auth').textContent=LANG[currentLang].nav_login;
+  document.getElementById('nav-login-text').textContent=LANG[currentLang].nav_login;
+document.getElementById('nav-avatar-wrap').style.display='none';
+document.getElementById('nav-login-text').style.display='inline';
   refreshAdminNav();
   applyLang();
 }
