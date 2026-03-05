@@ -1553,12 +1553,6 @@ async function loadMyContributions() {
   var el = document.getElementById('my-contributions');
   if (!el) return;
   document.getElementById('account-email').textContent = currentUser.email;
-  document.getElementById('nav-pseudo').textContent = r.data.pseudo_approved ? r.data.pseudo : 'COMPTE';
-    if (r.data.avatar_url) {
-      document.getElementById('nav-avatar').src = r.data.avatar_url;
-      document.getElementById('nav-avatar-wrap').style.display = 'inline-flex';
-      document.getElementById('nav-login-text').style.display = 'none';
-    }
   el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);">CHARGEMENT...</div>';
   var r = await sb.from('merch_items').select('id,name,brand,universe,year,image_url,status').eq('user_id', currentUser.id).order('created_at',{ascending:false});
   var items = r.data || [];
