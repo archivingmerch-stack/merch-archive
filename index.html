@@ -1171,7 +1171,10 @@
           </div>
           <div class="fgroup" style="margin-bottom:16px">
             <label>MOT DE PASSE</label>
-            <input type="password" id="login-pass" required placeholder="••••••••">
+            <div style="position:relative;">
+  <input type="password" id="login-pass" required placeholder="••••••••" style="width:100%;padding-right:36px;">
+  <button type="button" onclick="var i=document.getElementById('login-pass');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;">👁</button>
+</div>
           </div>
           <button type="submit" class="btn-primary">SE CONNECTER</button>
         </form>
@@ -1203,7 +1206,10 @@
           </div>
           <div class="fgroup" style="margin-bottom:16px">
             <label>MOT DE PASSE</label>
-            <input type="password" id="reg-pass" required placeholder="min. 6 caractères">
+            <div style="position:relative;">
+  <input type="password" id="reg-pass" required placeholder="min. 6 caractères" style="width:100%;padding-right:36px;">
+  <button type="button" onclick="var i=document.getElementById('reg-pass');i.type=i.type==='password'?'text':'password'" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:14px;">👁</button>
+</div>
           </div>
           <button type="submit" class="btn-primary">REJOINDRE L'ARCHIVE</button>
         </form>
