@@ -1388,6 +1388,21 @@
             <label>LIEN</label>
             <input type="url" id="edit-link">
           </div>
+          <div class="fgroup form-full">
+            <label>POINT DE FOCUS</label>
+            <div style="display:grid;grid-template-columns:repeat(3,32px);gap:3px;" id="edit-focus-grid">
+              <button type="button" onclick="setEditFocus('top left',this)" class="focus-btn">↖</button>
+              <button type="button" onclick="setEditFocus('top center',this)" class="focus-btn">↑</button>
+              <button type="button" onclick="setEditFocus('top right',this)" class="focus-btn">↗</button>
+              <button type="button" onclick="setEditFocus('center left',this)" class="focus-btn">←</button>
+              <button type="button" onclick="setEditFocus('center',this)" class="focus-btn active">•</button>
+              <button type="button" onclick="setEditFocus('center right',this)" class="focus-btn">→</button>
+              <button type="button" onclick="setEditFocus('bottom left',this)" class="focus-btn">↙</button>
+              <button type="button" onclick="setEditFocus('bottom center',this)" class="focus-btn">↓</button>
+              <button type="button" onclick="setEditFocus('bottom right',this)" class="focus-btn">↘</button>
+            </div>
+            <input type="hidden" id="edit-focus" value="center">
+          </div>
         </div>
         <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
           <button type="submit" class="btn-primary" style="width:auto;padding:11px 28px;">SAUVEGARDER →</button>
@@ -2204,6 +2219,11 @@ function openEditModal(item){
   document.getElementById('edit-year').value=item.year||'';
   document.getElementById('edit-desc').value=item.description||'';
   document.getElementById('edit-link').value=item.link||'';
+  var focus = item.image_focus || 'center';
+  document.getElementById('edit-focus').value = focus;
+  document.querySelectorAll('#edit-focus-grid .focus-btn').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('onclick').includes("'"+focus+"'"));
+  });
 
   // Photos existantes
   editExistingUrls=item.image_urls&&item.image_urls.length ? item.image_urls : (item.image_url?[item.image_url]:[]);
@@ -2214,7 +2234,11 @@ function openEditModal(item){
   document.getElementById('edit-modal').classList.add('open');
   document.getElementById('modal').classList.remove('open');
 }
-
+function setEditFocus(pos, btn) {
+  document.getElementById('edit-focus').value = pos;
+  document.querySelectorAll('#edit-focus-grid .focus-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+}
 function renderEditPhotos(){
   var grid=document.getElementById('edit-photos-grid');
   if(!editExistingUrls.length){grid.innerHTML='<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);">AUCUNE PHOTO</span>';return;}
@@ -2306,6 +2330,7 @@ async function saveEdit(e){
     year:parseInt(document.getElementById('edit-year').value)||null,
     description:document.getElementById('edit-desc').value,
     link:document.getElementById('edit-link').value,
+    image_focus: document.getElementById('edit-focus').value || 'center',
     image_urls:allUrls,
     image_url:allUrls[0]||null
   };
