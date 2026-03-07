@@ -552,6 +552,7 @@
     /* ── FORMS ── */
     .panel-wrap { max-width:760px; margin:0 auto; }
     .auth-wrap  { max-width:440px; margin:0 auto; }
+.auth-wrap.full-account { max-width:900px; }
 
     .form-panel {
       background: var(--panel);
@@ -1569,7 +1570,13 @@ function showSection(name) {
     document.getElementById('add-form-wrap').style.display = gated?'none':'block';
   }
   if (name==='auth') {
-    if (currentUser) { toggleAuth('account'); loadMyContributions(); loadProfile(); showProfileTab('contributions'); }
+    if (currentUser) {
+  toggleAuth('account');
+  document.querySelector('.auth-wrap').classList.add('full-account');
+  loadMyContributions();
+  loadProfile();
+  showProfileTab('contributions');
+}
     else { toggleAuth('login'); }
   }
   if (name==='browse') { showBrowse(); }
@@ -1761,6 +1768,9 @@ function toggleAuth(m){
   });
   var target = document.getElementById('panel-'+m);
   if (target) target.style.display = 'block';
+  if (m !== 'account') {
+    document.querySelector('.auth-wrap').classList.remove('full-account');
+  }
 }
 function setUser(u){
   currentUser=u;
