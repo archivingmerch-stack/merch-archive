@@ -2666,7 +2666,7 @@ async function browseGroup(groupId) {
     (linkedItems.length ?
       '<div class="merch-grid" id="browse-items-grid"></div>' :
       '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p>AUCUN ITEM ASSOCIÉ À CE GROUPE</p>'+
-      '<p style="font-size:12px;font-family:\'DM Mono\',monospace;color:var(--muted);margin-top:10px;letter-spacing:2px">Les items peuvent être rattachés à un groupe lors de la soumission</p></div>')+
+      '<p style="font-size:12px;font-family:\'DM Mono\',monospace;color:var(--muted);margin-top:10px;letter-spacing:2px">Pour ajouter un item ici, crée d'abord un sous-groupe (ex: album, tournée, collaboration) puis ajoute l'item depuis ce sous-groupe.</p></div>')+
     '</div>';
 
   if (linkedItems.length) renderBrowseGrid(linkedItems);
