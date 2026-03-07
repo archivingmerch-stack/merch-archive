@@ -1031,9 +1031,10 @@
                 <label>PHOTO</label>
                 <div class="upload-zone" onclick="document.getElementById('img-input').click()">
                   <div class="upload-lbl">↑ CLIQUER POUR UPLOADER</div>
-                  <input type="file" id="img-input" accept="image/*" onchange="previewImg(this)">
-                  <img id="upload-preview" class="upload-preview" alt="">
-                  <div id="focus-picker" style="display:none;margin-top:8px;">
+                  <input type="file" id="img-input" accept="image/*" multiple onchange="previewImgs(this)">
+                  <div id="add-photos-previews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+                </div>
+                <div id="focus-picker" style="display:none;margin-top:8px;" onclick="event.stopPropagation()">
   <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:6px;">POINT DE FOCUS</div>
   <div style="display:grid;grid-template-columns:repeat(3,32px);gap:3px;">
     <button type="button" onclick="setFocus('top left',this)" class="focus-btn">↖</button>
@@ -1048,7 +1049,6 @@
   </div>
 </div>
 <input type="hidden" id="item-focus" value="center">
-                </div>
               </div>
 
               <div class="fgroup">
@@ -2040,18 +2040,35 @@ function syncTags(){
   var p = document.getElementById('upload-preview');
   if (p) p.style.objectPosition = pos;
 }
-function previewImg(input){
-  if(input.files[0]){
-    if(input.files[0].size > 5*1024*1024){showAlert('add-alert','Image trop lourde — max 5MB','err');input.value='';return;}
-    var r=new FileReader();
-    r.onload=function(e){
-  var p=document.getElementById('upload-preview');
-  p.src=e.target.result;
-  p.style.display='block';
-  document.getElementById('focus-picker').style.display='block';
-};
-    r.readAsDataURL(input.files[0]);
-  }
+var addNewFiles = [];
+
+function previewImgs(input){
+  var files = Array.from(input.files);
+  var tooBig = files.filter(function(f){return f.size>5*1024*1024;});
+  if(tooBig.length){showAlert('add-alert','Image trop lourde — max 5MB','err');input.value='';return;}
+  if(addNewFiles.length + files.length > 5){showAlert('add-alert','Maximum 5 photos','err');return;}
+  addNewFiles = addNewFiles.concat(files);
+  var prev = document.getElementById('add-photos-previews');
+  prev.innerHTML = '';
+  addNewFiles.forEach(function(f,i){
+    var r = new FileReader();
+    r.onload = function(e){
+      var div = document.createElement('div');
+      div.style.cssText = 'position:relative;width:60px;height:60px;';
+      div.innerHTML = '<img src="'+e.target.result+'" style="width:60px;height:60px;object-fit:cover;">'+
+        '<button type="button" onclick="removeAddPhoto('+i+')" style="position:absolute;top:-4px;right:-4px;background:red;border:none;color:#fff;width:16px;height:16px;border-radius:50%;cursor:pointer;font-size:10px;line-height:16px;text-align:center;">×</button>';
+      prev.appendChild(div);
+    };
+    r.readAsDataURL(f);
+  });
+  document.getElementById('focus-picker').style.display = addNewFiles.length ? 'block' : 'none';
+}
+
+function removeAddPhoto(idx){
+  addNewFiles.splice(idx,1);
+  document.getElementById('img-input').value='';
+  previewImgs({files:[]});
+  if(!addNewFiles.length) document.getElementById('focus-picker').style.display='none';
 }
 async function submitMerch(e){
   e.preventDefault();
@@ -2060,12 +2077,18 @@ async function submitMerch(e){
   var btn=e.target.querySelector('[type=submit]');
   btn.textContent='UPLOAD EN COURS...'; btn.disabled=true;
   var image_url=null;
-  var file=document.getElementById('img-input').files[0];
-  if(file){
+  var image_urls=[];
+  var filesToUpload = addNewFiles.length ? addNewFiles : (document.getElementById('img-input').files[0] ? [document.getElementById('img-input').files[0]] : []);
+  for(var fi=0;fi<filesToUpload.length;fi++){
+    var file=filesToUpload[fi];
     var ext=file.name.split('.').pop();
     var fn=Date.now()+'-'+Math.random().toString(36).slice(2)+'.'+ext;
     var ur=await sb.storage.from('merch-images').upload(fn,file);
-    if(!ur.error){var ud=sb.storage.from('merch-images').getPublicUrl(fn);image_url=ud.data.publicUrl;}
+    if(!ur.error){
+      var ud=sb.storage.from('merch-images').getPublicUrl(fn);
+      if(fi===0) image_url=ud.data.publicUrl;
+      image_urls.push(ud.data.publicUrl);
+    }
   }
   var tags=[];try{tags=JSON.parse(document.getElementById('sel-tags').value||'[]');}catch{}
   var payload={
@@ -2078,7 +2101,7 @@ async function submitMerch(e){
     tee_brand:document.getElementById('item-tee').value||null,
     description:document.getElementById('item-desc').value,
     link:document.getElementById('item-link').value,
-    tags:tags, image_url:image_url,
+    tags:tags, image_url:image_url, image_urls:image_urls.length?image_urls:null,
 image_focus: document.getElementById('item-focus').value || 'center',
     user_id:currentUser.id, contributor_email:currentUser.email
   };
