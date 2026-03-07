@@ -2004,6 +2004,7 @@ function syncTags(){
 }
 function previewImg(input){
   if(input.files[0]){
+    if(input.files[0].size > 5*1024*1024){showAlert('add-alert','Image trop lourde — max 5MB','err');input.value='';return;}
     var r=new FileReader();
     r.onload=function(e){var p=document.getElementById('upload-preview');p.src=e.target.result;p.style.display='block';};
     r.readAsDataURL(input.files[0]);
@@ -2205,6 +2206,8 @@ function previewEditImgs(input){
   var files=Array.from(input.files);
   var total=editExistingUrls.length+editNewFiles.length+files.length;
   if(total>5){showAlert('edit-alert','Maximum 5 photos par item','err');return;}
+  var tooBig=files.filter(function(f){return f.size>5*1024*1024;});
+  if(tooBig.length){showAlert('edit-alert','Image trop lourde — max 5MB','err');input.value='';return;}
   editNewFiles=editNewFiles.concat(files);
   var prev=document.getElementById('edit-new-previews');
   prev.innerHTML='';
