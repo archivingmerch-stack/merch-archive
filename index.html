@@ -1920,7 +1920,7 @@ function renderGrid(items){
     var tags=(item.tags||[]).slice(0,3);
     var icon=U_ICON[item.universe]||'◈';
     var img=item.image_url
-      ?'<img class="card-img" src="'+item.image_url+'" alt="" loading="lazy">'
+      ?'<img class="card-img" src="'+item.image_url+'" alt="" loading="lazy" style="object-position:'+(item.image_focus||'center')+'">'
       :'<div class="card-placeholder">'+icon+'</div>';
     var sty='animation-delay:'+(i%16*0.025)+'s';
     var sc=SCLS[item.status]||'s-retail';
