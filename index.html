@@ -619,7 +619,8 @@
       letter-spacing:2px; color:var(--muted); text-transform:uppercase;
     }
     .upload-preview { max-width:100%; max-height:180px; display:none; margin-top:12px; }
-
+.focus-btn { background:var(--panel);border:1px solid var(--border);color:var(--muted);width:32px;height:32px;cursor:pointer;font-size:14px; }
+.focus-btn.active { border-color:var(--blue);color:var(--white);background:var(--navy); }
     .tags-box { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
     .ttog {
       padding:3px 10px;
@@ -1032,6 +1033,21 @@
                   <div class="upload-lbl">↑ CLIQUER POUR UPLOADER</div>
                   <input type="file" id="img-input" accept="image/*" onchange="previewImg(this)">
                   <img id="upload-preview" class="upload-preview" alt="">
+                  <div id="focus-picker" style="display:none;margin-top:8px;">
+  <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:6px;">POINT DE FOCUS</div>
+  <div style="display:grid;grid-template-columns:repeat(3,32px);gap:3px;">
+    <button type="button" onclick="setFocus('top left',this)" class="focus-btn">↖</button>
+    <button type="button" onclick="setFocus('top center',this)" class="focus-btn">↑</button>
+    <button type="button" onclick="setFocus('top right',this)" class="focus-btn">↗</button>
+    <button type="button" onclick="setFocus('center left',this)" class="focus-btn">←</button>
+    <button type="button" onclick="setFocus('center',this)" class="focus-btn active">•</button>
+    <button type="button" onclick="setFocus('center right',this)" class="focus-btn">→</button>
+    <button type="button" onclick="setFocus('bottom left',this)" class="focus-btn">↙</button>
+    <button type="button" onclick="setFocus('bottom center',this)" class="focus-btn">↓</button>
+    <button type="button" onclick="setFocus('bottom right',this)" class="focus-btn">↘</button>
+  </div>
+</div>
+<input type="hidden" id="item-focus" value="center">
                 </div>
               </div>
 
@@ -2002,11 +2018,23 @@ function syncTags(){
     Array.from(document.querySelectorAll('.ttog.sel')).map(function(b){return b.textContent;})
   );
 }
+  function setFocus(pos, btn) {
+  document.getElementById('item-focus').value = pos;
+  document.querySelectorAll('.focus-btn').forEach(function(b){b.classList.remove('active');});
+  btn.classList.add('active');
+  var p = document.getElementById('upload-preview');
+  if (p) p.style.objectPosition = pos;
+}
 function previewImg(input){
   if(input.files[0]){
     if(input.files[0].size > 5*1024*1024){showAlert('add-alert','Image trop lourde — max 5MB','err');input.value='';return;}
     var r=new FileReader();
-    r.onload=function(e){var p=document.getElementById('upload-preview');p.src=e.target.result;p.style.display='block';};
+    r.onload=function(e){
+  var p=document.getElementById('upload-preview');
+  p.src=e.target.result;
+  p.style.display='block';
+  document.getElementById('focus-picker').style.display='block';
+};
     r.readAsDataURL(input.files[0]);
   }
 }
@@ -2036,6 +2064,7 @@ async function submitMerch(e){
     description:document.getElementById('item-desc').value,
     link:document.getElementById('item-link').value,
     tags:tags, image_url:image_url,
+image_focus: document.getElementById('item-focus').value || 'center',
     user_id:currentUser.id, contributor_email:currentUser.email
   };
   var r=await sb.from('merch_items').insert([payload]).select();
