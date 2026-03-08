@@ -1643,11 +1643,10 @@ function teeBrandSelect(ctx, el) {
   var inp  = document.getElementById(inputId);
   var hint = document.getElementById(hintId);
   if (el.dataset.val === '__new__') {
+    // garde la valeur tapée, on l'insèrera au submit
     hint.textContent = '\u26a0 Nouvelle marque — sera soumise à validation admin.';
-    inp.dataset.newBrand = inp.value.trim();
   } else {
     inp.value = el.dataset.val;
-    inp.dataset.newBrand = '';
     hint.textContent = '';
   }
   document.getElementById(dropId).classList.remove('open');
@@ -1664,8 +1663,10 @@ function teeBrandGetValue(ctx) {
   var inp = document.getElementById(inputId);
   if (!inp) return { value: null, isNew: false };
   var v = (inp.value || '').trim();
-  var isNew = !!(inp.dataset.newBrand && inp.dataset.newBrand === v);
-  return { value: v || null, isNew: isNew };
+  if (!v) return { value: null, isNew: false };
+  // isNew = valeur tapée absente de la liste officielle (insensible à la casse)
+  var isNew = !teeBrandsList.find(function(b){ return b.toLowerCase() === v.toLowerCase(); });
+  return { value: v, isNew: isNew };
 }
 
 async function maybeSubmitNewTeeBrand(brandName, itemId) {
