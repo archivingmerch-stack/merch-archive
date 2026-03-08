@@ -1208,8 +1208,10 @@
                 <input type="url" id="item-link" placeholder="https://...">
               </div>
               <div class="fgroup form-full">
+                <label>TAGS</label>
+                <div class="tags-box" id="tags-box"></div>
                 <input type="hidden" id="sel-tags" value="[]">
-            </div>
+              </div>
             <button type="submit" class="btn-primary" style="margin-top:20px;">SOUMETTRE À L'ARCHIVE →</button>
             <div class="fgroup form-full" id="group-select-wrap" style="display:none">
   <label>RATTACHER À UN GROUPE <small style="color:var(--muted);font-size:9px;">(optionnel)</small></label>
@@ -2232,6 +2234,7 @@ document.getElementById('item-type').addEventListener('change',function(){
 });
 function buildTags(u){
   var box=document.getElementById('tags-box');
+  if(!box) return;
   box.innerHTML='';
   var tags=U_TAGS[u]||[];
   var seen=new Set();
@@ -2330,14 +2333,10 @@ image_focus: document.getElementById('item-focus').value || 'center',
     var forcedGroup = document.getElementById('item-group-id-forced').value;
 var selGroup = document.getElementById('item-group-id') ? document.getElementById('item-group-id').value : '';
 var groupId = forcedGroup || selGroup;
-console.log('[DEBUG] forcedGroup=', forcedGroup, 'selGroup=', selGroup, 'groupId=', groupId, 'item=', r.data&&r.data[0]?r.data[0].id:'NULL');
 if (groupId && r.data && r.data[0]) {
-  var ig = await sb.from('item_groups').insert([{item_id: r.data[0].id, group_id: groupId}]);
-  console.log('[DEBUG] item_groups insert result:', JSON.stringify(ig));
-} else {
-  console.warn('[DEBUG] item_groups NOT inserted - groupId=', groupId, 'r.data=', r.data);
+  await sb.from('item_groups').insert([{item_id: r.data[0].id, group_id: groupId}]);
 }
-document.getElementById('group-select-wrap').style.display = 'none';
+var gsw=document.getElementById('group-select-wrap'); if(gsw) gsw.style.display='none';
 var returnGroup = document.getElementById('add-return-group').value;
 var returnParent = document.getElementById('add-return-parent').value;
 document.getElementById('item-group-id-forced').value = '';
