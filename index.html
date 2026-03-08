@@ -1308,7 +1308,7 @@
           </div>
           <div style="flex:1;">
             <div id="account-pseudo-display" style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--white);margin-bottom:6px;">—</div>
-            <button onclick="openEditProfile()" class="btn-edit" style="font-size:9px;">✎ MODIFIER LE PROFIL</button>
+            <button onclick="openEditProfile()" class="btn-edit" style="font-size:9px;" id="edit-profile-btn">✎ MODIFIER LE PROFIL</button>
           </div>
         </div>
         </div>
@@ -1346,7 +1346,7 @@
       <label>PSEUDO <small style="color:var(--muted);font-size:9px;">(soumis à modération)</small></label>
       <input type="text" id="profile-pseudo-input" placeholder="ton pseudo..." maxlength="30">
     </div>
-    <button onclick="saveProfile()" class="btn-primary" style="width:100%;">SAUVEGARDER →</button>
+    <button onclick="saveProfile()" class="btn-primary" style="width:100%;" data-i18n="save_btn">SAUVEGARDER →</button>
   </div>
 </div>
 <!-- CREATE GROUP MODAL -->
@@ -1510,7 +1510,7 @@
           </div>
         </div>
         <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
-          <button type="submit" class="btn-primary" style="width:auto;padding:11px 28px;">SAUVEGARDER →</button>
+          <button type="submit" class="btn-primary" style="width:auto;padding:11px 28px;" data-i18n="save_btn">SAUVEGARDER →</button>
           <button type="button" class="btn-danger" onclick="deleteItem()">SUPPRIMER CET ITEM</button>
         </div>
       </form>
@@ -1582,6 +1582,7 @@ var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 var configured = SUPABASE_URL !== 'SUPABASE_URL';
 
 var sb=null, currentUser=null, allItems=[], activeU='';
+function L(){ return LANG[currentLang] || LANG['fr']; }
 
 // ═══════════════════════════════════
 // LABELS
@@ -1634,14 +1635,14 @@ function teeBrandInput(ctx) {
   var html = '';
   if (!q) {
     filtered = teeBrandsList;
-    html += '<div class="tee-combo-opt" data-val="" onclick="teeBrandSelect(\''+ctx+'\',this)">Inconnu / N/A</div>';
+    html += '<div class="tee-combo-opt" data-val="" onclick="teeBrandSelect(\''+ctx+'\',this)">'+L().inconnu+'</div>';
   }
   filtered.forEach(function(b){
     html += '<div class="tee-combo-opt" data-val="'+b.replace(/"/g,'&quot;')+'" onclick="teeBrandSelect(\''+ctx+'\',this)">'+b+'</div>';
   });
   if (q && !teeBrandsList.find(function(b){ return b.toLowerCase() === q; })) {
-    html += '<div class="tee-combo-opt new-val" data-val="__new__" onclick="teeBrandSelect(\''+ctx+'\',this)">+ CRÉER &laquo;'+inp.value.trim()+'&raquo;</div>';
-    hint.textContent = 'Cette marque sera soumise à validation admin.';
+    html += '<div class="tee-combo-opt new-val" data-val="__new__" onclick="teeBrandSelect(\''+ctx+'\',this)">'+L().tee_create_prefix+inp.value.trim()+L().tee_create_suffix+'</div>';
+    hint.textContent = L().tee_hint_new;
   } else {
     hint.textContent = '';
   }
@@ -1657,7 +1658,7 @@ function teeBrandSelect(ctx, el) {
   var hint = document.getElementById(hintId);
   if (el.dataset.val === '__new__') {
     // garde la valeur tapée, on l'insèrera au submit
-    hint.textContent = '\u26a0 Nouvelle marque — sera soumise à validation admin.';
+    hint.textContent = L().tee_hint_warning;
   } else {
     inp.value = el.dataset.val;
     hint.textContent = '';
@@ -1808,7 +1809,7 @@ async function loadMyContributions() {
   var r = await sb.from('merch_items').select('id,name,brand,universe,year,image_url,status').eq('user_id', currentUser.id).order('created_at',{ascending:false});
   var items = r.data || [];
   if (!items.length) {
-    el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);padding:20px 0;text-align:center;">AUCUNE CONTRIBUTION POUR L\'INSTANT</div>';
+    el.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:11px;letter-spacing:2px;color:var(--muted);padding:20px 0;text-align:center;">'+L().contributions_empty+'</div>';
     return;
   }
   el.innerHTML = items.map(function(item){
@@ -1936,7 +1937,7 @@ function previewProfileImg(input) {
 async function saveProfile() {
   if (!currentUser || !configured) return;
   var btn = document.querySelector('#edit-profile-modal .btn-primary');
-  btn.textContent = 'SAUVEGARDE...'; btn.disabled = true;
+  btn.textContent = L().saving; btn.disabled = true;
   var avatar_url = userProfile ? userProfile.avatar_url : null;
   var file = document.getElementById('profile-img-input').files[0];
   if (file) {
@@ -1951,10 +1952,10 @@ async function saveProfile() {
   var pseudo = document.getElementById('profile-pseudo-input').value.trim();
   var payload = { id: currentUser.id, avatar_url: avatar_url, pseudo: pseudo, pseudo_approved: false };
   var r = await sb.from('profiles').upsert([payload]);
-  btn.textContent = 'SAUVEGARDER →'; btn.disabled = false;
-  if (r.error) { showAlert('profile-alert', 'ERREUR: '+r.error.message, 'err'); }
+  btn.textContent = L().save_btn; btn.disabled = false;
+  if (r.error) { showAlert('profile-alert', L().err_prefix+r.error.message, 'err'); }
   else {
-    showAlert('profile-alert', '✓ PROFIL SAUVEGARDÉ — pseudo en attente de validation', 'ok');
+    showAlert('profile-alert', L().profile_saved, 'ok');
     await loadProfile();
     setTimeout(closeEditProfile, 1800);
   }
@@ -1996,7 +1997,7 @@ function clearUser(){
 }
 async function doLogin(e){
   e.preventDefault();
-  if(!configured){showAlert('login-alert','Supabase non configuré','err');return;}
+  if(!configured){showAlert('login-alert',L().not_configured,'err');return;}
   var r=await sb.auth.signInWithPassword({
     email:document.getElementById('login-email').value,
     password:document.getElementById('login-pass').value
@@ -2006,23 +2007,23 @@ async function doLogin(e){
 }
 async function doRegister(e){
   e.preventDefault();
-  if(!configured){showAlert('reg-alert','Supabase non configuré','err');return;}
+  if(!configured){showAlert('reg-alert',L().not_configured,'err');return;}
   var r=await sb.auth.signUp({
     email:document.getElementById('reg-email').value,
     password:document.getElementById('reg-pass').value
   });
   if(r.error) showAlert('reg-alert',r.error.message,'err');
-  else showAlert('reg-alert','VÉRIFIE TON EMAIL','ok');
+  else showAlert('reg-alert',L().email_verify,'ok');
 }
 async function doForgot(e){
   e.preventDefault();
-  if(!configured){showAlert('forgot-alert','Supabase non configuré','err');return;}
+  if(!configured){showAlert('forgot-alert',L().not_configured,'err');return;}
   var email = document.getElementById('forgot-email').value;
   var r = await sb.auth.resetPasswordForEmail(email, {
     redirectTo: window.location.origin + window.location.pathname
   });
   if(r.error) showAlert('forgot-alert', r.error.message, 'err');
-  else showAlert('forgot-alert','EMAIL ENVOYÉ — VÉRIFIE TA BOÎTE MAIL ✓','ok');
+  else showAlert('forgot-alert',L().email_sent,'ok');
 }
 async function logout(){await sb.auth.signOut();clearUser();showSection('explore');}
 
@@ -2153,7 +2154,7 @@ function filterItems(){
 // ═══════════════════════════════════
 function renderGrid(items){
   var g=document.getElementById('merch-grid');
-  if(!items.length){g.innerHTML='<div class="empty-state"><p>AUCUN ITEM TROUVÉ</p></div>';return;}
+  if(!items.length){g.innerHTML='<div class="empty-state"><p>'+L().no_items+'</p></div>';return;}
   g.innerHTML=items.map(function(item,i){
     var tags=(item.tags||[]).slice(0,3);
     var icon=U_ICON[item.universe]||'◈';
@@ -2269,8 +2270,8 @@ var addNewFiles = [];
 function previewImgs(input){
   var files = Array.from(input.files);
   var tooBig = files.filter(function(f){return f.size>5*1024*1024;});
-  if(tooBig.length){showAlert('add-alert','Image trop lourde — max 5MB','err');input.value='';return;}
-  if(addNewFiles.length + files.length > 5){showAlert('add-alert','Maximum 5 photos','err');return;}
+  if(tooBig.length){showAlert('add-alert',L().img_too_big,'err');input.value='';return;}
+  if(addNewFiles.length + files.length > 5){showAlert('add-alert',L().max_photos,'err');return;}
   addNewFiles = addNewFiles.concat(files);
   var prev = document.getElementById('add-photos-previews');
   prev.innerHTML = '';
@@ -2296,8 +2297,8 @@ function removeAddPhoto(idx){
 }
 async function submitMerch(e){
   e.preventDefault();
-  if(!configured){showAlert('add-alert','Supabase non configuré','err');return;}
-  if(!currentUser){showAlert('add-alert','Connexion requise','err');return;}
+  if(!configured){showAlert('add-alert',L().not_configured,'err');return;}
+  if(!currentUser){showAlert('add-alert',L().login_required_err,'err');return;}
   var btn=e.target.querySelector('[type=submit]');
   btn.textContent='UPLOAD EN COURS...'; btn.disabled=true;
   var image_url=null;
@@ -2331,7 +2332,7 @@ image_focus: document.getElementById('item-focus').value || 'center',
   };
   var r=await sb.from('merch_items').insert([payload]).select();
   btn.textContent='SOUMETTRE À L\'ARCHIVE →'; btn.disabled=false;
-  if(r.error){showAlert('add-alert','ERREUR: '+r.error.message,'err');}
+  if(r.error){showAlert('add-alert',L().err_prefix+r.error.message,'err');}
   else{
     // Soumettre nouvelle marque si besoin
     var tbAdd = teeBrandGetValue('add');
@@ -2348,7 +2349,7 @@ var returnParent = document.getElementById('add-return-parent').value;
 document.getElementById('item-group-id-forced').value = '';
 document.getElementById('add-return-group').value = '';
 document.getElementById('add-return-parent').value = '';
-    showAlert('add-alert','ITEM AJOUTÉ !','ok');
+    showAlert('add-alert',L().item_added,'ok');
     e.target.reset();
     addNewFiles=[];
 var app=document.getElementById('add-photos-previews'); if(app) app.innerHTML='';
@@ -2400,7 +2401,7 @@ function openModal(item){
     editBtn='<button class="btn-edit" onclick=\'openEditModal('+JSON.stringify(item).replace(/'/g,"&#39;")+')\'>✎ MODIFIER</button>';
   }
   if(isAdmin()){
-    editBtn += '<button class="btn-edit" style="background:rgba(170,51,51,.2);border-color:rgba(170,51,51,.5);color:#e05;" onclick="if(confirm(\'Supprimer cet item ?\'))adminDeleteItem(\''+item.id+'\')">✕ SUPPRIMER</button>';
+    editBtn += '<button class="btn-edit" style="background:rgba(170,51,51,.2);border-color:rgba(170,51,51,.5);color:#e05;" onclick="if(confirm(\'Supprimer cet item ?\'))adminDeleteItem(\''+item.id+'\')">✕ '+L().admin_delete+'</button>';
   }
 
   document.getElementById('modal-body').innerHTML=
@@ -2506,7 +2507,7 @@ function setEditFocus(pos, btn) {
 }
 function renderEditPhotos(){
   var grid=document.getElementById('edit-photos-grid');
-  if(!editExistingUrls.length){grid.innerHTML='<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);">AUCUNE PHOTO</span>';return;}
+  if(!editExistingUrls.length){grid.innerHTML='<span style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted);">'+L().no_photos+'</span>';return;}
   grid.innerHTML=editExistingUrls.map(function(url,i){
     return '<div class="photo-thumb-wrap">'+
       '<img class="photo-thumb active" src="'+url+'">'+
@@ -2523,9 +2524,9 @@ function removeExistingPhoto(idx){
 function previewEditImgs(input){
   var files=Array.from(input.files);
   var total=editExistingUrls.length+editNewFiles.length+files.length;
-  if(total>5){showAlert('edit-alert','Maximum 5 photos par item','err');return;}
+  if(total>5){showAlert('edit-alert',L().max_photos_item,'err');return;}
   var tooBig=files.filter(function(f){return f.size>5*1024*1024;});
-  if(tooBig.length){showAlert('edit-alert','Image trop lourde — max 5MB','err');input.value='';return;}
+  if(tooBig.length){showAlert('edit-alert',L().img_too_big,'err');input.value='';return;}
   editNewFiles=editNewFiles.concat(files);
   var prev=document.getElementById('edit-new-previews');
   prev.innerHTML='';
@@ -2567,9 +2568,9 @@ function closeEditModal(e){
 
 async function saveEdit(e){
   e.preventDefault();
-  if(!configured||!currentUser){showAlert('edit-alert','Non connecté','err');return;}
+  if(!configured||!currentUser){showAlert('edit-alert',L().not_connected,'err');return;}
   var btn=e.target.querySelector('[type=submit]');
-  btn.textContent='SAUVEGARDE...'; btn.disabled=true;
+  btn.textContent=L().saving; btn.disabled=true;
 
   // Upload nouvelles photos
   var newUrls=[];
@@ -2608,24 +2609,24 @@ async function saveEdit(e){
   var tbEdit = teeBrandGetValue('edit');
   if (!r.error && tbEdit.isNew && tbEdit.value) await maybeSubmitNewTeeBrand(tbEdit.value, id);
 
-  btn.textContent='SAUVEGARDER →'; btn.disabled=false;
+  btn.textContent=L().save_btn; btn.disabled=false;
 
-  if(r.error){showAlert('edit-alert','ERREUR: '+r.error.message,'err');}
+  if(r.error){showAlert('edit-alert',L().err_prefix+r.error.message,'err');}
   else{
-    showAlert('edit-alert','SAUVEGARDÉ !','ok');
+    showAlert('edit-alert',L().item_saved,'ok');
     await loadItems();
     setTimeout(function(){document.getElementById('edit-modal').classList.remove('open');},1000);
   }
 }
 
 async function deleteItem(){
-  if(!confirm('Supprimer cet item ? Cette action est irréversible.')) return;
+  if(!confirm(L().delete_item_confirm)) return;
   if(!configured||!currentUser) return;
   var id=document.getElementById('edit-item-id').value;
   await sb.from('collections').delete().eq('item_id', id);
 await sb.from('item_groups').delete().eq('item_id', id);
 var r=await sb.from('merch_items').delete().eq('id',id).eq('user_id',currentUser.id);
-  if(r.error){showAlert('edit-alert','ERREUR: '+r.error.message,'err');}
+  if(r.error){showAlert('edit-alert',L().err_prefix+r.error.message,'err');}
   else{
     document.getElementById('edit-modal').classList.remove('open');
     await loadItems();
@@ -2668,10 +2669,10 @@ async function loadAdminTeeBrands() {
   if (!el) return;
   var r = await sb.from('tee_brands').select('*').eq('approved', false).order('created_at', {ascending:false});
   if (!r.data || !r.data.length) {
-    el.innerHTML = '<div class="admin-empty">AUCUNE MARQUE EN ATTENTE ✓</div>'; return;
+    el.innerHTML = '<div class="admin-empty">'+L().admin_no_brands+'</div>'; return;
   }
   el.innerHTML = '<table class="admin-table"><thead><tr>'+
-    '<th>MARQUE</th><th>SUGGÉRÉE PAR</th><th>DATE</th><th>ACTION</th>'+
+    '<th>'+L().admin_brand_col1+'</th><th>'+L().admin_brand_col2+'</th><th>'+L().admin_brand_col3+'</th><th>'+L().admin_brand_col4+'</th>'+
     '</tr></thead><tbody>'+
     r.data.map(function(b){
       return '<tr>'+
@@ -2679,8 +2680,8 @@ async function loadAdminTeeBrands() {
         '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted)">'+(b.suggested_by||'—')+'</td>'+
         '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted)">'+(b.created_at?b.created_at.slice(0,10):'—')+'</td>'+
         '<td>'+
-        '<button class="btn-approve" onclick="approveTee(\''+b.id+'\')">APPROUVER</button>'+
-        '<button class="btn-reject" onclick="rejectTee(\''+b.id+'\',\''+b.name.replace(/'/g,'\\\'')+'\')">REFUSER</button>'+
+        '<button class="btn-approve" onclick="approveTee(\''+b.id+'\')">'+L().admin_approve+'</button>'+
+        '<button class="btn-reject" onclick="rejectTee(\''+b.id+'\',\''+b.name.replace(/'/g,'\\\'')+'\')">'+L().admin_reject+'</button>'+
         '</td></tr>';
     }).join('')+
     '</tbody></table>';
@@ -2693,7 +2694,7 @@ async function approveTee(id) {
 }
 
 async function rejectTee(id, brandName) {
-  if (!confirm('Refuser la marque "'+brandName+'" ? Les items utilisant cette marque seront remis à Inconnu/N/A.')) return;
+  if (!confirm(L().reject_brand_confirm.replace('{name}',brandName))) return;
   // Reset items using this brand
   await sb.from('merch_items').update({tee_brand:null}).eq('tee_brand', brandName);
   await sb.from('tee_brands').delete().eq('id',id);
@@ -2707,10 +2708,10 @@ async function loadAdminGroups() {
   if (!el) return;
   var r = await sb.from('groups').select('*').eq('approved', false).order('created_at', {ascending:false});
   if (!r.data || !r.data.length) {
-    el.innerHTML = '<div class="admin-empty">AUCUN GROUPE EN ATTENTE ✓</div>'; return;
+    el.innerHTML = '<div class="admin-empty">'+L().admin_no_groups+'</div>'; return;
   }
   el.innerHTML = '<table class="admin-table"><thead><tr>'+
-    '<th>NOM</th><th>UNIVERS</th><th>NIVEAU</th><th>CRÉÉ PAR</th><th>DATE</th><th>ACTION</th>'+
+    '<th>'+L().admin_groups_col1+'</th><th>'+L().admin_groups_col2+'</th><th>'+L().admin_groups_col3+'</th><th>'+L().admin_groups_col4+'</th><th>'+L().admin_groups_col5+'</th><th>'+L().admin_groups_col6+'</th>'+
     '</tr></thead><tbody>'+
     r.data.map(function(g){
       return '<tr>'+
@@ -2720,8 +2721,8 @@ async function loadAdminGroups() {
         '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted)">'+(g.created_by||'—')+'</td>'+
         '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted)">'+(g.created_at?g.created_at.slice(0,10):'—')+'</td>'+
         '<td>'+
-        '<button class="btn-approve" onclick="approveGroup(\''+g.id+'\')">APPROUVER</button>'+
-        '<button class="btn-reject" onclick="rejectGroup(\''+g.id+'\')">REFUSER</button>'+
+        '<button class="btn-approve" onclick="approveGroup(\''+g.id+'\')">'+L().admin_approve+'</button>'+
+        '<button class="btn-reject" onclick="rejectGroup(\''+g.id+'\')">'+L().admin_reject+'</button>'+
         '</td></tr>';
     }).join('')+
     '</tbody></table>';
@@ -2735,7 +2736,7 @@ async function approveGroup(id) {
 }
 
 async function rejectGroup(id) {
-  if (!confirm('Supprimer ce groupe ?')) return;
+  if (!confirm(L().delete_group_confirm)) return;
   await sb.from('groups').delete().eq('id',id);
   await loadAdminGroups();
 }
@@ -2758,9 +2759,9 @@ function adminFilterItems() {
 
 function renderAdminItems(items) {
   var el = document.getElementById('admin-items-table');
-  if (!items.length) { el.innerHTML='<div class="admin-empty">AUCUN RÉSULTAT</div>'; return; }
+  if (!items.length) { el.innerHTML='<div class="admin-empty">'+L().no_result+'</div>'; return; }
   el.innerHTML = '<table class="admin-table"><thead><tr>'+
-    '<th>NOM</th><th>ARTISTE</th><th>UNIVERS</th><th>ANNÉE</th><th>CONTRIBUTEUR</th><th>ACTION</th>'+
+    '<th>'+L().admin_items_col1+'</th><th>'+L().admin_items_col2+'</th><th>'+L().admin_items_col3+'</th><th>'+L().admin_items_col4+'</th><th>'+L().admin_items_col5+'</th><th>'+L().admin_items_col6+'</th>'+
     '</tr></thead><tbody>'+
     items.slice(0,100).map(function(item){
       return '<tr>'+
@@ -2769,14 +2770,14 @@ function renderAdminItems(items) {
         '<td><span class="tag">'+(item.universe||'—')+'</span></td>'+
         '<td style="color:var(--blue2);font-family:\'DM Mono\',monospace;font-size:11px">'+(item.year||'—')+'</td>'+
         '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted)">'+(item.contributor_email?item.contributor_email.split('@')[0]:'anon')+'</td>'+
-        '<td><button class="btn-reject" onclick="adminDeleteItem(\''+item.id+'\')">SUPPRIMER</button></td>'+
+        '<td><button class="btn-reject" onclick="adminDeleteItem(\''+item.id+'\')">'+L().admin_delete+'</button></td>'+
         '</tr>';
     }).join('')+
     '</tbody></table>';
 }
 
 async function adminDeleteItem(id) {
-  if (!confirm('Supprimer définitivement cet item ?')) return;
+  if (!confirm(L().delete_item_confirm2)) return;
 await sb.from('collections').delete().eq('item_id', id);
 await sb.from('item_groups').delete().eq('item_id', id);
 await sb.from('merch_items').delete().eq('id', id);
@@ -2954,7 +2955,7 @@ async function browseGroup(groupId) {
 '</div></div>'+
     (linkedItems.length ?
       '<div class="merch-grid" id="browse-items-grid"></div>' :
-      '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p>AUCUN ITEM ASSOCIÉ À CE GROUPE</p>'+
+      '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p>'+L().no_items_group+'</p>'+
       '<p style="font-size:12px;font-family:\'DM Mono\',monospace;color:var(--muted);margin-top:10px;letter-spacing:2px">Pour ajouter un item ici, crée d’abord un sous-groupe (ex: album, tournée, collaboration) puis ajoute l’item depuis ce sous-groupe.</p></div>')+
     '</div>';
 
@@ -2993,7 +2994,7 @@ async function browseSubGroup(subGroupId, parentGroupId) {
     '</div></div>'+
     (linkedItems.length ?
       '<div class="merch-grid" id="browse-items-grid"></div>' :
-      '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p>AUCUN ITEM DANS CET ARC/ALBUM</p></div>')+
+      '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p>'+L().no_items_subgroup+'</p></div>')+
     '</div>';
 
   if (linkedItems.length) renderBrowseGrid(linkedItems);
@@ -3049,7 +3050,7 @@ function openCreateGroup(universe, parentId, level, existingGroup) {
     document.getElementById('create-group-form').prepend(hi);
   }
   document.getElementById('group-edit-id').value = editId;
-  if (existingGroup) title = level===2 ? 'MODIFIER LE SOUS-GROUPE' : 'MODIFIER LE GROUPE';
+  if (existingGroup) title = level===2 ? L().modify_subgroup : L().modify_group;
   document.getElementById('create-group-title').textContent = title;
   document.getElementById('group-name').value = existingGroup ? existingGroup.name : '';
   document.getElementById('group-desc').value = existingGroup ? (existingGroup.description||'') : '';
@@ -3091,7 +3092,7 @@ function closeCreateGroupModal(e) {
 }
 async function deleteGroup(groupId) {
   if (!isAdmin()) return;
-  if (!confirm('Supprimer ce groupe ?')) return;
+  if (!confirm(L().delete_group_confirm)) return;
   await sb.from('item_groups').delete().eq('group_id', groupId);
   await sb.from('groups').delete().eq('id', groupId);
   allGroups = [];
@@ -3102,7 +3103,7 @@ async function deleteGroup(groupId) {
 }
   async function deleteGroup(groupId) {
   if (!isAdmin()) return;
-  if (!confirm('Supprimer ce groupe ?')) return;
+  if (!confirm(L().delete_group_confirm)) return;
   await sb.from('item_groups').delete().eq('group_id', groupId);
   await sb.from('groups').delete().eq('id', groupId);
   allGroups = [];
@@ -3131,7 +3132,7 @@ function editSubGroup(btn) {
 
 async function submitGroup(e) {
   e.preventDefault();
-  if (!configured || !currentUser) { showAlert('group-alert','Connexion requise','err'); return; }
+  if (!configured || !currentUser) { showAlert('group-alert',L().login_required_err,'err'); return; }
   var btn = e.target.querySelector('[type=submit]');
   btn.textContent = 'UPLOAD...'; btn.disabled = true;
 
@@ -3175,12 +3176,12 @@ async function submitGroup(e) {
     r = await sb.from('groups').insert([payload]);
   }
   btn.textContent = LANG[currentLang].group_submit; btn.disabled = false;
-  if (r.error) { showAlert('group-alert','ERREUR: '+r.error.message,'err'); }
+  if (r.error) { showAlert('group-alert',L().err_prefix+r.error.message,'err'); }
   else {
     allGroups = [];
     await loadGroups();
     renderCarouselGroups();
-    showAlert('group-alert', editId ? '✓ MODIFICATION SOUMISE — EN ATTENTE DE VALIDATION' : '✓ GROUPE CRÉÉ !','ok');
+    showAlert('group-alert', editId ? L().group_edit_submitted : L().group_created,'ok');
     setTimeout(function(){
       document.getElementById('create-group-modal').classList.remove('open');
       var parentId = document.getElementById('group-parent-id').value;
@@ -3265,6 +3266,44 @@ var LANG = {
     landing_p6: "Un endroit. Chaque pièce. Pour toujours.",
     landing_cta: "ENTRER DANS L'ARCHIVE \u2192",
     landing_note: "ACCÈS LIBRE \u2014 CONTRIBUTION SUR INSCRIPTION",
+    saving: 'SAUVEGARDE...',
+    save_btn: 'SAUVEGARDER →',
+    profile_saved: '✓ PROFIL SAUVEGARDÉ — pseudo en attente de validation',
+    email_verify: 'VÉRIFIE TON EMAIL',
+    email_sent: 'EMAIL ENVOYÉ — VÉRIFIE TA BOÎTE MAIL ✓',
+    not_configured: 'Supabase non configuré',
+    login_required_err: 'Connexion requise',
+    err_prefix: 'ERREUR: ',
+    img_too_big: 'Image trop lourde — max 5MB',
+    max_photos: 'Maximum 5 photos',
+    max_photos_item: 'Maximum 5 photos par item',
+    not_connected: 'Non connecté',
+    item_saved: 'SAUVEGARDÉ !',
+    delete_item_confirm: 'Supprimer cet item ? Cette action est irréversible.',
+    delete_group_confirm: 'Supprimer ce groupe ?',
+    delete_item_confirm2: 'Supprimer définitivement cet item ?',
+    reject_brand_confirm: 'Refuser la marque "{name}" ? Les items utilisant cette marque seront remis à Inconnu/N/A.',
+    modify_subgroup: 'MODIFIER LE SOUS-GROUPE',
+    modify_group: 'MODIFIER LE GROUPE',
+    group_edit_submitted: '✓ MODIFICATION SOUMISE — EN ATTENTE DE VALIDATION',
+    admin_brand_col1: 'MARQUE', admin_brand_col2: 'SUGGÉRÉE PAR', admin_brand_col3: 'DATE', admin_brand_col4: 'ACTION',
+    admin_approve: 'APPROUVER', admin_reject: 'REFUSER',
+    admin_groups_col1: 'NOM', admin_groups_col2: 'UNIVERS', admin_groups_col3: 'NIVEAU', admin_groups_col4: 'CRÉÉ PAR', admin_groups_col5: 'DATE', admin_groups_col6: 'ACTION',
+    admin_items_col1: 'NOM', admin_items_col2: 'ARTISTE', admin_items_col3: 'UNIVERS', admin_items_col4: 'ANNÉE', admin_items_col5: 'CONTRIBUTEUR', admin_items_col6: 'ACTION',
+    admin_delete: 'SUPPRIMER',
+    admin_no_brands: 'AUCUNE MARQUE EN ATTENTE ✓',
+    admin_no_groups: 'AUCUN GROUPE EN ATTENTE ✓',
+    level_artist: 'ARTISTE/SAGA', level_album: 'ALBUM/ARC',
+    no_items_subgroup: 'AUCUN ITEM DANS CET ARC/ALBUM',
+    no_items_group: 'AUCUN ITEM ASSOCIÉ À CE GROUPE',
+    no_subgroup_hint: "Pour ajouter un item ici, crée d'abord un sous-groupe (ex: album, tournée, collaboration) puis ajoute l'item depuis ce sous-groupe.",
+    tee_hint_new: 'Cette marque sera soumise à validation admin.',
+    tee_hint_warning: '⚠ Nouvelle marque — sera soumise à validation admin.',
+    tee_create_prefix: '+ CRÉER «',
+    tee_create_suffix: '»',
+    inconnu: 'Inconnu / N/A',
+    no_result: 'AUCUN RÉSULTAT',
+    no_photos: 'AUCUNE PHOTO',
   },
   en: {
     nav_explore: 'EXPLORE',
@@ -3337,6 +3376,44 @@ var LANG = {
     landing_p6: "One place. Every piece. Forever.",
     landing_cta: "ENTER THE ARCHIVE \u2192",
     landing_note: "FREE ACCESS \u2014 CONTRIBUTE WITH AN ACCOUNT",
+    saving: 'SAVING...',
+    save_btn: 'SAVE →',
+    profile_saved: '✓ PROFILE SAVED — username pending validation',
+    email_verify: 'CHECK YOUR EMAIL',
+    email_sent: 'EMAIL SENT — CHECK YOUR INBOX ✓',
+    not_configured: 'Supabase not configured',
+    login_required_err: 'Login required',
+    err_prefix: 'ERROR: ',
+    img_too_big: 'Image too large — max 5MB',
+    max_photos: 'Max 5 photos',
+    max_photos_item: 'Max 5 photos per item',
+    not_connected: 'Not logged in',
+    item_saved: 'SAVED!',
+    delete_item_confirm: 'Delete this item? This cannot be undone.',
+    delete_group_confirm: 'Delete this group?',
+    delete_item_confirm2: 'Permanently delete this item?',
+    reject_brand_confirm: 'Reject brand "{name}"? Items using it will be reset to Unknown/N/A.',
+    modify_subgroup: 'EDIT SUBGROUP',
+    modify_group: 'EDIT GROUP',
+    group_edit_submitted: '✓ EDIT SUBMITTED — PENDING VALIDATION',
+    admin_brand_col1: 'BRAND', admin_brand_col2: 'SUGGESTED BY', admin_brand_col3: 'DATE', admin_brand_col4: 'ACTION',
+    admin_approve: 'APPROVE', admin_reject: 'REJECT',
+    admin_groups_col1: 'NAME', admin_groups_col2: 'UNIVERSE', admin_groups_col3: 'LEVEL', admin_groups_col4: 'CREATED BY', admin_groups_col5: 'DATE', admin_groups_col6: 'ACTION',
+    admin_items_col1: 'NAME', admin_items_col2: 'ARTIST', admin_items_col3: 'UNIVERSE', admin_items_col4: 'YEAR', admin_items_col5: 'CONTRIBUTOR', admin_items_col6: 'ACTION',
+    admin_delete: 'DELETE',
+    admin_no_brands: 'NO PENDING BRANDS ✓',
+    admin_no_groups: 'NO PENDING GROUPS ✓',
+    level_artist: 'ARTIST/SAGA', level_album: 'ALBUM/ARC',
+    no_items_subgroup: 'NO ITEMS IN THIS ARC/ALBUM',
+    no_items_group: 'NO ITEMS LINKED TO THIS GROUP',
+    no_subgroup_hint: 'To add an item here, first create a subgroup (e.g. album, tour, collab) then add the item from that subgroup.',
+    tee_hint_new: 'This brand will be submitted for admin validation.',
+    tee_hint_warning: '⚠ New brand — will be submitted for admin validation.',
+    tee_create_prefix: '+ CREATE «',
+    tee_create_suffix: '»',
+    inconnu: 'Unknown / N/A',
+    no_result: 'NO RESULTS',
+    no_photos: 'NO PHOTOS',
   }
 };
 
