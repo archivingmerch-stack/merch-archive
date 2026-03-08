@@ -820,6 +820,26 @@
   background:linear-gradient(90deg,var(--blue),rgba(61,127,255,0));
 }
 
+/* ── TEE BRAND COMBOBOX ── */
+.tee-combo-wrap { position:relative; }
+.tee-combo-wrap input { width:100%; box-sizing:border-box; }
+.tee-combo-dropdown {
+  position:absolute; top:100%; left:0; right:0; z-index:200;
+  background:var(--panel); border:1px solid var(--border);
+  border-top:none; max-height:200px; overflow-y:auto;
+  display:none;
+}
+.tee-combo-dropdown.open { display:block; }
+.tee-combo-opt {
+  padding:8px 12px; cursor:pointer;
+  font-family:'DM Mono',monospace; font-size:11px; color:var(--white);
+}
+.tee-combo-opt:hover { background:var(--mid); }
+.tee-combo-opt.new-val { color:var(--blue2); }
+.tee-combo-hint {
+  font-family:'DM Mono',monospace; font-size:9px; letter-spacing:1px;
+  color:var(--muted); margin-top:4px;
+}
 /* ── ADMIN PANEL ── */
 .admin-panel { max-width:900px; margin:0 auto; }
 .admin-section { margin-bottom:48px; }
@@ -1038,7 +1058,13 @@
       </div>
 
       <div class="admin-section">
-        <div class="admin-section-title">TOUS LES ITEMS — SUPPRESSION</div>
+        <div class="admin-section-title">NOUVELLES MARQUES TEE — VALIDATION</div>
+        <div id="admin-tee-brands-pending">
+          <div class="admin-empty">CHARGEMENT...</div>
+        </div>
+      </div>
+
+      <div class="admin-section">
         <div style="margin-bottom:12px;">
           <input type="text" id="admin-search" placeholder="Rechercher un item à supprimer..."
             style="width:100%;padding:10px 12px;background:var(--panel);border:1px solid var(--border);color:var(--white);font-family:'DM Mono',monospace;font-size:12px;outline:none;"
@@ -1162,25 +1188,15 @@
 
               <div class="fgroup form-full" id="tee-wrap" style="display:none">
                 <label>MANUFACTURER DU TEE</label>
-                <select id="item-tee">
-                  <option value="">Inconnu / N/A</option>
-                  <option>3D Emblem</option><option>All Sport</option>
-                  <option>Alstyle (AAA)</option><option>Anvil Nicaragua</option>
-                  <option>Backstage Pass</option><option>Brockum: Group</option>
-                  <option>Brockum: Collection</option><option>Brockum: Worldwide</option>
-                  <option>Brockum: Worldwide (Made in China)</option>
-                  <option>Changes</option><option>Cronies Fantasy</option>
-                  <option>FOTL (Fruit of the Loom)</option><option>GEM</option>
-                  <option>Giant: by Anvil</option><option>Giant: by Tee Jays</option>
-                  <option>Giant: by Tultex</option><option>Giant: Generic</option>
-                  <option>Gildan (3)</option><option>Hanes: Blue Bar</option>
-                  <option>Hanes: Heavyweight Ultraweight</option>
-                  <option>Hanes: Heavyweight Double</option>
-                  <option>Liquid Blue</option><option>Oneita Power-T</option>
-                  <option>Screen Stars Value Weight</option>
-                  <option>Sof Tee by Tee Jays</option><option>Spring Ford</option>
-                  <option>TULTEX</option><option>Wild Oats</option><option>Winterland</option>
-                </select>
+                <div class="tee-combo-wrap" id="tee-combo-wrap-add">
+                  <input type="text" id="item-tee" autocomplete="off"
+                    placeholder="Inconnu / N/A"
+                    oninput="teeBrandInput('add')"
+                    onfocus="teeBrandInput('add')"
+                    onblur="setTimeout(function(){teeBrandClose('add')},180)">
+                  <div class="tee-combo-dropdown" id="tee-drop-add"></div>
+                </div>
+                <div class="tee-combo-hint" id="tee-hint-add"></div>
               </div>
 
               <div class="fgroup form-full">
@@ -1456,6 +1472,18 @@
             <label>LIEN</label>
             <input type="url" id="edit-link">
           </div>
+          <div class="fgroup form-full" id="edit-tee-wrap">
+            <label>MANUFACTURER DU TEE</label>
+            <div class="tee-combo-wrap" id="tee-combo-wrap-edit">
+              <input type="text" id="edit-tee" autocomplete="off"
+                placeholder="Inconnu / N/A"
+                oninput="teeBrandInput('edit')"
+                onfocus="teeBrandInput('edit')"
+                onblur="setTimeout(function(){teeBrandClose('edit')},180)">
+              <div class="tee-combo-dropdown" id="tee-drop-edit"></div>
+            </div>
+            <div class="tee-combo-hint" id="tee-hint-edit"></div>
+          </div>
           <div class="fgroup form-full">
             <label>POINT DE FOCUS</label>
             <div style="display:grid;grid-template-columns:repeat(3,32px);gap:3px;" id="edit-focus-grid">
@@ -1557,6 +1585,103 @@ var SCLS = {promo:'s-promo',retail:'s-retail',limited:'s-limited',special:'s-spe
 var SLBL = {promo:'PROMO',retail:'GRAND PUBLIC',limited:'LIMITED',special:'SPECIAL'};
 
 // ═══════════════════════════════════
+// TEE BRANDS
+// ═══════════════════════════════════
+var TEE_BRANDS_DEFAULT = [
+  '3D Emblem','All Sport','Alstyle (AAA)','Anvil Nicaragua','Backstage Pass',
+  'Brockum: Group','Brockum: Collection','Brockum: Worldwide',
+  'Brockum: Worldwide (Made in China)','Changes','Cronies Fantasy',
+  'FOTL (Fruit of the Loom)','GEM','Giant: by Anvil','Giant: by Tee Jays',
+  'Giant: by Tultex','Giant: Generic','Gildan (3)','Hanes: Blue Bar',
+  'Hanes: Heavyweight Ultraweight','Hanes: Heavyweight Double',
+  'Liquid Blue','Oneita Power-T','Screen Stars Value Weight',
+  'Sof Tee by Tee Jays','Spring Ford','TULTEX','Wild Oats','Winterland'
+];
+var teeBrandsList = []; // loaded from DB (approved only)
+
+async function loadTeeBrands() {
+  if (!configured) { teeBrandsList = TEE_BRANDS_DEFAULT.slice(); return; }
+  var r = await sb.from('tee_brands').select('name').eq('approved', true).order('name');
+  if (r.data && r.data.length) {
+    teeBrandsList = r.data.map(function(b){ return b.name; });
+  } else {
+    teeBrandsList = TEE_BRANDS_DEFAULT.slice();
+  }
+}
+
+function teeBrandInput(ctx) {
+  var inputId  = ctx === 'add' ? 'item-tee' : 'edit-tee';
+  var dropId   = ctx === 'add' ? 'tee-drop-add' : 'tee-drop-edit';
+  var hintId   = ctx === 'add' ? 'tee-hint-add' : 'tee-hint-edit';
+  var inp  = document.getElementById(inputId);
+  var drop = document.getElementById(dropId);
+  var hint = document.getElementById(hintId);
+  var q    = (inp.value || '').trim().toLowerCase();
+  var filtered = teeBrandsList.filter(function(b){ return b.toLowerCase().includes(q); });
+  var html = '';
+  if (!q) {
+    filtered = teeBrandsList;
+    html += '<div class="tee-combo-opt" data-val="" onclick="teeBrandSelect(\''+ctx+'\',this)">Inconnu / N/A</div>';
+  }
+  filtered.forEach(function(b){
+    html += '<div class="tee-combo-opt" data-val="'+b.replace(/"/g,'&quot;')+'" onclick="teeBrandSelect(\''+ctx+'\',this)">'+b+'</div>';
+  });
+  if (q && !teeBrandsList.find(function(b){ return b.toLowerCase() === q; })) {
+    html += '<div class="tee-combo-opt new-val" data-val="__new__" onclick="teeBrandSelect(\''+ctx+'\',this)">+ CRÉER &laquo;'+inp.value.trim()+'&raquo;</div>';
+    hint.textContent = 'Cette marque sera soumise à validation admin.';
+  } else {
+    hint.textContent = '';
+  }
+  drop.innerHTML = html;
+  drop.classList.add('open');
+}
+
+function teeBrandSelect(ctx, el) {
+  var inputId = ctx === 'add' ? 'item-tee' : 'edit-tee';
+  var hintId  = ctx === 'add' ? 'tee-hint-add' : 'tee-hint-edit';
+  var dropId  = ctx === 'add' ? 'tee-drop-add' : 'tee-drop-edit';
+  var inp  = document.getElementById(inputId);
+  var hint = document.getElementById(hintId);
+  if (el.dataset.val === '__new__') {
+    hint.textContent = '\u26a0 Nouvelle marque — sera soumise à validation admin.';
+    inp.dataset.newBrand = inp.value.trim();
+  } else {
+    inp.value = el.dataset.val;
+    inp.dataset.newBrand = '';
+    hint.textContent = '';
+  }
+  document.getElementById(dropId).classList.remove('open');
+}
+
+function teeBrandClose(ctx) {
+  var dropId = ctx === 'add' ? 'tee-drop-add' : 'tee-drop-edit';
+  var drop = document.getElementById(dropId);
+  if (drop) drop.classList.remove('open');
+}
+
+function teeBrandGetValue(ctx) {
+  var inputId = ctx === 'add' ? 'item-tee' : 'edit-tee';
+  var inp = document.getElementById(inputId);
+  if (!inp) return { value: null, isNew: false };
+  var v = (inp.value || '').trim();
+  var isNew = !!(inp.dataset.newBrand && inp.dataset.newBrand === v);
+  return { value: v || null, isNew: isNew };
+}
+
+async function maybeSubmitNewTeeBrand(brandName, itemId) {
+  if (!configured || !brandName) return;
+  var exists = teeBrandsList.find(function(b){ return b.toLowerCase() === brandName.toLowerCase(); });
+  if (exists) return;
+  // Insert pending brand
+  await sb.from('tee_brands').insert([{
+    name: brandName,
+    approved: false,
+    suggested_by: currentUser ? currentUser.email : 'anon',
+    item_id: itemId || null
+  }]);
+}
+
+// ═══════════════════════════════════
 // TAGS
 // ═══════════════════════════════════
 var U_TAGS = {
@@ -1612,6 +1737,7 @@ if (configured) {
     var r = await sb.auth.getSession();
     if (r.data.session) setUser(r.data.session.user);
     sb.auth.onAuthStateChange(function(ev,sess){ sess ? setUser(sess.user) : clearUser(); });
+await loadTeeBrands();
 await loadItems();
 await loadGroups();
 await loadCollection();
@@ -2181,7 +2307,7 @@ async function submitMerch(e){
     product_type:document.getElementById('item-type').value,
     status:document.getElementById('item-status').value,
     year:parseInt(document.getElementById('item-year').value)||null,
-    tee_brand:document.getElementById('item-tee').value||null,
+    tee_brand:(function(){ var tb=teeBrandGetValue('add'); return tb.value||null; })(),
     description:document.getElementById('item-desc').value,
     link:document.getElementById('item-link').value,
     tags:tags, image_url:image_url, image_urls:image_urls.length?image_urls:null,
@@ -2192,6 +2318,9 @@ image_focus: document.getElementById('item-focus').value || 'center',
   btn.textContent='SOUMETTRE À L\'ARCHIVE →'; btn.disabled=false;
   if(r.error){showAlert('add-alert','ERREUR: '+r.error.message,'err');}
   else{
+    // Soumettre nouvelle marque si besoin
+    var tbAdd = teeBrandGetValue('add');
+    if (tbAdd.isNew && tbAdd.value) await maybeSubmitNewTeeBrand(tbAdd.value, r.data&&r.data[0]?r.data[0].id:null);
     var forcedGroup = document.getElementById('item-group-id-forced').value;
 var selGroup = document.getElementById('item-group-id') ? document.getElementById('item-group-id').value : '';
 var groupId = forcedGroup || selGroup;
@@ -2328,6 +2457,13 @@ function openEditModal(item){
   document.getElementById('edit-year').value=item.year||'';
   document.getElementById('edit-desc').value=item.description||'';
   document.getElementById('edit-link').value=item.link||'';
+  // Pre-fill tee_brand combobox
+  var editTeeInp = document.getElementById('edit-tee');
+  if (editTeeInp) {
+    editTeeInp.value = item.tee_brand || '';
+    editTeeInp.dataset.newBrand = '';
+    document.getElementById('tee-hint-edit').textContent = '';
+  }
   var focus = item.image_focus || 'center';
   document.getElementById('edit-focus').value = focus;
   document.querySelectorAll('#edit-focus-grid .focus-btn').forEach(function(b){
@@ -2441,11 +2577,16 @@ async function saveEdit(e){
     link:document.getElementById('edit-link').value,
     image_focus: document.getElementById('edit-focus').value || 'center',
     image_urls:allUrls,
-    image_url:allUrls[0]||null
+    image_url:allUrls[0]||null,
+    tee_brand:(function(){ var tb=teeBrandGetValue('edit'); return tb.value||null; })()
   };
 
   var id=document.getElementById('edit-item-id').value;
   var r=await sb.from('merch_items').update(payload).eq('id',id).eq('user_id',currentUser.id);
+
+  // Soumettre nouvelle marque si besoin
+  var tbEdit = teeBrandGetValue('edit');
+  if (!r.error && tbEdit.isNew && tbEdit.value) await maybeSubmitNewTeeBrand(tbEdit.value, id);
 
   btn.textContent='SAUVEGARDER →'; btn.disabled=false;
 
@@ -2498,7 +2639,47 @@ function refreshAdminNav() {
 async function loadAdminPanel() {
   if (!isAdmin() || !configured) return;
   await loadAdminGroups();
+  await loadAdminTeeBrands();
   await loadAdminItems();
+}
+
+async function loadAdminTeeBrands() {
+  var el = document.getElementById('admin-tee-brands-pending');
+  if (!el) return;
+  var r = await sb.from('tee_brands').select('*').eq('approved', false).order('created_at', {ascending:false});
+  if (!r.data || !r.data.length) {
+    el.innerHTML = '<div class="admin-empty">AUCUNE MARQUE EN ATTENTE ✓</div>'; return;
+  }
+  el.innerHTML = '<table class="admin-table"><thead><tr>'+
+    '<th>MARQUE</th><th>SUGGÉRÉE PAR</th><th>DATE</th><th>ACTION</th>'+
+    '</tr></thead><tbody>'+
+    r.data.map(function(b){
+      return '<tr>'+
+        '<td><strong>'+b.name+'</strong></td>'+
+        '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted)">'+(b.suggested_by||'—')+'</td>'+
+        '<td style="font-family:\'DM Mono\',monospace;font-size:10px;color:var(--muted)">'+(b.created_at?b.created_at.slice(0,10):'—')+'</td>'+
+        '<td>'+
+        '<button class="btn-approve" onclick="approveTee(\''+b.id+'\')">APPROUVER</button>'+
+        '<button class="btn-reject" onclick="rejectTee(\''+b.id+'\',\''+b.name.replace(/'/g,'\\\'')+'\')">REFUSER</button>'+
+        '</td></tr>';
+    }).join('')+
+    '</tbody></table>';
+}
+
+async function approveTee(id) {
+  await sb.from('tee_brands').update({approved:true}).eq('id',id);
+  await loadTeeBrands();
+  await loadAdminTeeBrands();
+}
+
+async function rejectTee(id, brandName) {
+  if (!confirm('Refuser la marque "'+brandName+'" ? Les items utilisant cette marque seront remis à Inconnu/N/A.')) return;
+  // Reset items using this brand
+  await sb.from('merch_items').update({tee_brand:null}).eq('tee_brand', brandName);
+  await sb.from('tee_brands').delete().eq('id',id);
+  await loadTeeBrands();
+  await loadAdminTeeBrands();
+  await loadItems();
 }
 
 async function loadAdminGroups() {
