@@ -1168,6 +1168,13 @@
                     <option>Mini Figure</option><option>Blind Box</option>
                     <option>Plush Toy</option><option>Board Game / Cards</option>
                   </optgroup>
+                  <optgroup label="DJ & VINYLE">
+                    <option>Slipmat</option><option>Tourne-disque</option>
+                    <option>Autre</option>
+                  </optgroup>
+                  <optgroup label="AUTRE">
+                    <option>Autre</option>
+                  </optgroup>
                 </select>
               </div>
 
@@ -2889,13 +2896,22 @@ async function browseGroup(groupId) {
   var subGroups = allGroups.filter(function(g){ return g.parent_id===groupId; });
   var uLabel = U_LABEL[group.universe] || group.universe.toUpperCase();
 
-  // Charger les items liés à ce groupe (depuis DB, pas allItems)
+  // Charger les items liés à ce groupe ET à ses sous-groupes
   var linkedItems = [];
   if (configured) {
-    var r = await sb.from('item_groups').select('item_id').eq('group_id', groupId);
-    if (r.data && r.data.length) {
-      var ids = r.data.map(function(x){ return x.item_id; });
-      var ri = await sb.from('merch_items').select('*').in('id', ids);
+    // IDs de tous les groupes concernés : le groupe + ses sous-groupes
+    var subGroupIds = allGroups.filter(function(g){ return g.parent_id===groupId; }).map(function(g){ return g.id; });
+    var allGroupIds = [groupId].concat(subGroupIds);
+    // Récupérer tous les item_ids liés
+    var allItemIds = [];
+    for (var gi=0; gi<allGroupIds.length; gi++) {
+      var r = await sb.from('item_groups').select('item_id').eq('group_id', allGroupIds[gi]);
+      if (r.data && r.data.length) {
+        r.data.forEach(function(x){ if (!allItemIds.includes(x.item_id)) allItemIds.push(x.item_id); });
+      }
+    }
+    if (allItemIds.length) {
+      var ri = await sb.from('merch_items').select('*').in('id', allItemIds);
       linkedItems = ri.data || [];
     }
   }
