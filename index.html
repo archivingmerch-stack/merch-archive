@@ -2286,7 +2286,7 @@ function removeAddPhoto(idx){
   addNewFiles.splice(idx,1);
   document.getElementById('img-input').value='';
   previewImgs({files:[]});
-  if(!addNewFiles.length) document.getElementById('focus-picker').style.display='none';
+  if(!addNewFiles.length) var fp=document.getElementById('focus-picker'); if(fp) fp.style.display='none';
 }
 async function submitMerch(e){
   e.preventDefault();
@@ -2345,9 +2345,9 @@ document.getElementById('add-return-parent').value = '';
     showAlert('add-alert','ITEM AJOUTÉ !','ok');
     e.target.reset();
     addNewFiles=[];
-document.getElementById('add-photos-previews').innerHTML='';
-document.getElementById('focus-picker').style.display='none';
-    document.getElementById('upload-preview').style.display='none';
+var app=document.getElementById('add-photos-previews'); if(app) app.innerHTML='';
+var fp=document.getElementById('focus-picker'); if(fp) fp.style.display='none';
+    var up=document.getElementById('upload-preview'); if(up) up.style.display='none';
     document.querySelectorAll('.ttog').forEach(function(b){b.classList.remove('sel');});
     await loadItems();
     if (returnGroup && returnParent) {
