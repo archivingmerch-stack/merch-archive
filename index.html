@@ -1219,6 +1219,7 @@
 </div>
 <input type="hidden" id="item-group-id-forced" value="">
 <input type="hidden" id="add-return-group" value="">
+<input type="hidden" id="add-return-parent" value="">
           </form>
         </div>
       </div>
@@ -2334,8 +2335,10 @@ if (groupId && r.data && r.data[0]) {
 }
 document.getElementById('group-select-wrap').style.display = 'none';
 var returnGroup = document.getElementById('add-return-group').value;
+var returnParent = document.getElementById('add-return-parent').value;
 document.getElementById('item-group-id-forced').value = '';
 document.getElementById('add-return-group').value = '';
+document.getElementById('add-return-parent').value = '';
     showAlert('add-alert','ITEM AJOUTÉ !','ok');
     e.target.reset();
     addNewFiles=[];
@@ -2344,7 +2347,10 @@ document.getElementById('focus-picker').style.display='none';
     document.getElementById('upload-preview').style.display='none';
     document.querySelectorAll('.ttog').forEach(function(b){b.classList.remove('sel');});
     await loadItems();
-    if (returnGroup) {
+    if (returnGroup && returnParent) {
+  // Vient d'un sous-groupe → retour au sous-groupe
+  setTimeout(function(){ showSection('browse'); browseSubGroup(returnGroup, returnParent); }, 1000);
+} else if (returnGroup) {
   setTimeout(function(){ showSection('browse'); browseGroup(returnGroup); }, 1000);
 } else {
   setTimeout(function(){ showSection('explore'); }, 1200);
@@ -2965,7 +2971,7 @@ async function browseSubGroup(subGroupId, parentGroupId) {
     '<div style="margin-top:8px">'+
     '<div class="sec-head" style="align-items:center;"><h2>'+subGroup.name.toUpperCase()+'</h2>'+
     '<div style="display:flex;align-items:center;gap:10px;"><span>'+(linkedItems.length||0)+' ITEMS</span>'+
-    (currentUser ? '<button class="btn-edit" onclick="openAddItemInGroup(\''+subGroupId+'\',\''+subGroup.universe+'\',\''+subGroup.name+'\')">+ AJOUTER UN ITEM</button>' : '')+
+    (currentUser ? '<button class="btn-edit" onclick="openAddItemInGroup(\''+subGroupId+'\',\''+subGroup.universe+'\',\''+subGroup.name+'\',\''+parentGroupId+'\')">+ AJOUTER UN ITEM</button>' : '')+
     '</div></div>'+
     (linkedItems.length ?
       '<div class="merch-grid" id="browse-items-grid"></div>' :
@@ -3087,13 +3093,14 @@ async function deleteGroup(groupId) {
   if (btn && activeU) setU(btn, activeU);
   else if (document.getElementById('section-browse').classList.contains('active')) showBrowse();
 }
-  function openAddItemInGroup(groupId, universe, groupName) {
+  function openAddItemInGroup(groupId, universe, groupName, parentGroupId) {
   if (!currentUser) { showSection('auth'); return; }
   showSection('add');
   var uSelect = document.getElementById('item-universe');
   if (uSelect) { uSelect.value = universe; buildTags(universe); }
   document.getElementById('item-group-id-forced').value = groupId;
   document.getElementById('add-return-group').value = groupId;
+  document.getElementById('add-return-parent').value = parentGroupId || '';
   window.scrollTo(0,0);
     }
 function editSubGroup(btn) {
