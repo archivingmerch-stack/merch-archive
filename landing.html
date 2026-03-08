@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ARCHIVING MERCH</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink:    #04060f;
+      --border: #1a2240;
+      --muted:  #4a5880;
+      --soft:   #8a9ac0;
+      --white:  #e8eeff;
+      --blue:   #3d7fff;
+      --blue2:  #5b9aff;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background: var(--ink);
+      color: var(--white);
+      font-family: 'DM Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: .4;
+    }
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image: linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 60px 60px;
+      opacity: .18;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glow-orb {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(61,127,255,.08) 0%, transparent 70%);
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    #lang-toggle {
+      position: fixed;
+      top: 24px;
+      right: 28px;
+      z-index: 100;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'DM Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 3px;
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    #lang-toggle:hover { border-color: var(--blue); color: var(--blue); }
+    main {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 24px;
+    }
+    .logo-wrap {
+      margin-bottom: 50px;
+      opacity: 0;
+      animation: fadeUp .8s ease forwards;
+    }
+    .logo-wrap img { height: 64px; object-fit: contain; }
+    .divider {
+      width: 1px;
+      height: 50px;
+      background: linear-gradient(to bottom, transparent, var(--border), transparent);
+      margin: 0 auto 50px;
+      opacity: 0;
+      animation: fadeUp .8s .1s ease forwards;
+    }
+    .manifesto {
+      max-width: 600px;
+      width: 100%;
+      opacity: 0;
+      animation: fadeUp .8s .2s ease forwards;
+    }
+    .slogan {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(24px, 5vw, 44px);
+      letter-spacing: 6px;
+      color: var(--white);
+      margin-bottom: 36px;
+      line-height: 1;
+    }
+    .manifesto p {
+      font-size: 11px;
+      letter-spacing: 1.2px;
+      line-height: 2.2;
+      color: var(--soft);
+      margin-bottom: 18px;
+    }
+    .manifesto p.hi { color: var(--white); }
+    .signature {
+      margin-top: 36px;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      font-style: italic;
+    }
+    .cta-wrap {
+      margin-top: 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .btn-enter {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 15px;
+      letter-spacing: 5px;
+      padding: 15px 40px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: all .2s;
+    }
+    .btn-enter:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(61,127,255,.3); }
+    .cta-note { font-size: 9px; letter-spacing: 2px; color: var(--muted); }
+    .footer-line {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9px;
+      letter-spacing: 3px;
+      color: var(--muted);
+      z-index: 1;
+      white-space: nowrap;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @media (max-width: 600px) {
+      main { padding: 60px 20px; }
+      .logo-wrap img { height: 48px; }
+    }
+  </style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="glow-orb"></div>
+<button id="lang-toggle" onclick="toggleLang()">EN</button>
+
+<main>
+  <div class="logo-wrap">
+    <img src="https://vjjwoptvzgzcniowbmsw.supabase.co/storage/v1/object/public/merch-images/Archiving%20merch%20(1)-Photoroom.png" alt="Archiving Merch">
+  </div>
+  <div class="divider"></div>
+  <div class="manifesto">
+    <div class="slogan" id="slogan"></div>
+    <p id="p1"></p>
+    <p id="p2"></p>
+    <p id="p3" class="hi"></p>
+    <p id="p4"></p>
+    <p id="p5"></p>
+    <p id="p6" class="hi"></p>
+    <div class="signature">— Hatsun</div>
+    <div class="cta-wrap">
+      <a href="./archive.html" class="btn-enter" id="cta-btn"></a>
+      <span class="cta-note" id="cta-note"></span>
+    </div>
+  </div>
+</main>
+
+<div class="footer-line">ARCHIVING MERCH © 2025</div>
+
+<script>
+var lang = localStorage.getItem('ma_lang') || 'fr';
+var T = {
+  fr: {
+    slogan: "ARCHIVONS LE MERCH DU MONDE ENTIER",
+    p1: "Tout a commencé par une archive fan que j\u2019ai créée pour un label.",
+    p2: "De là, j\u2019ai découvert différents mondes, différentes collections, chacune plus passionnante que la dernière. Leur travail vivait sur les réseaux sociaux. Et les réseaux sociaux ne durent pas.",
+    p3: "Des posts supprimés. Des algorithmes qui changent. Des comptes qui disparaissent du jour au lendemain. Et quand ça arrive, on n\u2019a aucun pouvoir.",
+    p4: "Quand j\u2019ai pitché le projet autour de moi, la réaction était toujours la même. \u00abCe serait incroyable. Je pourrais passer des heures à juste regarder.\u00bb Parce qu\u2019on s\u2019est toujours demandé \u2014 qu\u2019est-ce qu\u2019ils ont vraiment créé pour cette série\u00a0? Cet album\u00a0? Cette franchise\u00a0?",
+    p5: "Archiving Merch est la réponse. Une archive créée par des fans, pour des fans qui ont envie de découvrir.",
+    p6: "Un endroit. Chaque pièce. Pour toujours.",
+    cta: "ENTRER DANS L'ARCHIVE \u2192",
+    note: "ACCÈS LIBRE \u2014 CONTRIBUTION SUR INSCRIPTION",
+    toggle: "EN"
+  },
+  en: {
+    slogan: "LET'S ARCHIVE THE WORLD OF MERCH",
+    p1: "It started with a fan archive I built for a record label.",
+    p2: "From there, I discovered different worlds, different collections, each one more fascinating than the last. Their work lived on social media. And social media doesn\u2019t last.",
+    p3: "Posts get deleted. Algorithms change. Accounts vanish overnight. And when that happens, there\u2019s nothing we can do.",
+    p4: "I pitched the idea to people around me. The reaction was always the same. \u201cThis would be incredible. I could spend hours just browsing.\u201d Because we\u2019ve always wondered \u2014 what did they actually make for that show? That album? That franchise?",
+    p5: "Archiving Merch is the answer. An archive built by fans, for fans who want to discover.",
+    p6: "One place. Every piece. Forever.",
+    cta: "ENTER THE ARCHIVE \u2192",
+    note: "FREE ACCESS \u2014 CONTRIBUTE WITH AN ACCOUNT",
+    toggle: "FR"
+  }
+};
+function applyLang() {
+  var L = T[lang];
+  document.getElementById('slogan').textContent = L.slogan;
+  document.getElementById('p1').textContent = L.p1;
+  document.getElementById('p2').textContent = L.p2;
+  document.getElementById('p3').textContent = L.p3;
+  document.getElementById('p4').textContent = L.p4;
+  document.getElementById('p5').textContent = L.p5;
+  document.getElementById('p6').textContent = L.p6;
+  document.getElementById('cta-btn').textContent = L.cta;
+  document.getElementById('cta-note').textContent = L.note;
+  document.getElementById('lang-toggle').textContent = L.toggle;
+  document.documentElement.lang = lang;
+}
+function toggleLang() {
+  lang = lang === 'fr' ? 'en' : 'fr';
+  localStorage.setItem('ma_lang', lang);
+  applyLang();
+}
+applyLang();
+</script>
+</body>
+</html>
