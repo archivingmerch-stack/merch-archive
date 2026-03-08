@@ -886,6 +886,32 @@
   </div>
 </div>
 
+<!-- ══ LANDING SCREEN ══ -->
+<div id="landing-screen" style="display:none;position:fixed;inset:0;background:var(--ink);z-index:9999;overflow-y:auto;font-family:'DM Mono',monospace;">
+  <div style="position:fixed;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;opacity:.18;pointer-events:none;"></div>
+  <div style="position:fixed;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(61,127,255,.08) 0%,transparent 70%);top:-100px;left:50%;transform:translateX(-50%);pointer-events:none;"></div>
+  <button onclick="toggleLang()" id="landing-lang-btn" style="position:fixed;top:24px;right:28px;z-index:100;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;padding:6px 12px;cursor:pointer;">EN</button>
+  <div style="position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;">
+    <div style="margin-bottom:50px;"><img src="https://vjjwoptvzgzcniowbmsw.supabase.co/storage/v1/object/public/merch-images/Archiving%20merch%20(1)-Photoroom.png" alt="Archiving Merch" style="height:64px;object-fit:contain;"></div>
+    <div style="width:1px;height:50px;background:linear-gradient(to bottom,transparent,var(--border),transparent);margin:0 auto 50px;"></div>
+    <div style="max-width:600px;width:100%;">
+      <div id="landing-slogan" style="font-family:'Bebas Neue',sans-serif;font-size:clamp(24px,5vw,44px);letter-spacing:6px;color:var(--white);margin-bottom:36px;line-height:1;"></div>
+      <p id="landing-p1" style="font-size:11px;letter-spacing:1.2px;line-height:2.2;color:var(--soft);margin-bottom:18px;"></p>
+      <p id="landing-p2" style="font-size:11px;letter-spacing:1.2px;line-height:2.2;color:var(--soft);margin-bottom:18px;"></p>
+      <p id="landing-p3" style="font-size:11px;letter-spacing:1.2px;line-height:2.2;color:var(--white);margin-bottom:18px;"></p>
+      <p id="landing-p4" style="font-size:11px;letter-spacing:1.2px;line-height:2.2;color:var(--soft);margin-bottom:18px;"></p>
+      <p id="landing-p5" style="font-size:11px;letter-spacing:1.2px;line-height:2.2;color:var(--soft);margin-bottom:18px;"></p>
+      <p id="landing-p6" style="font-size:11px;letter-spacing:1.2px;line-height:2.2;color:var(--white);margin-bottom:0;"></p>
+      <div style="margin-top:36px;font-size:11px;letter-spacing:3px;color:var(--muted);font-style:italic;">— Hatsun</div>
+      <div style="margin-top:50px;display:flex;flex-direction:column;align-items:flex-start;gap:14px;">
+        <button onclick="enterArchive()" id="landing-cta" style="font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:5px;padding:15px 40px;background:var(--blue);color:#fff;border:none;cursor:pointer;"></button>
+        <span id="landing-note" style="font-size:9px;letter-spacing:2px;color:var(--muted);"></span>
+      </div>
+    </div>
+  </div>
+  <div style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:3px;color:var(--muted);white-space:nowrap;">ARCHIVING MERCH © 2025</div>
+</div>
+
 <!-- HEADER -->
 <header>
   <div class="header-inner">
@@ -2923,6 +2949,15 @@ var LANG = {
     item_added: 'ITEM AJOUTÉ !',
     disconnect: 'SE DÉCONNECTER',
     my_account: 'MON COMPTE',
+    landing_slogan: 'ARCHIVONS LE MERCH DU MONDE ENTIER',
+    landing_p1: "Tout a commencé par une archive fan que j\u2019ai créée pour un label.",
+    landing_p2: "De là, j\u2019ai découvert différents mondes, différentes collections, chacune plus passionnante que la dernière. Leur travail vivait sur les réseaux sociaux. Et les réseaux sociaux ne durent pas.",
+    landing_p3: "Des posts supprimés. Des algorithmes qui changent. Des comptes qui disparaissent du jour au lendemain. Et quand ça arrive, on n\u2019a aucun pouvoir.",
+    landing_p4: "Quand j\u2019ai pitché le projet autour de moi, la réaction était toujours la même. \u00abCe serait incroyable. Je pourrais passer des heures à juste regarder.\u00bb Parce qu\u2019on s\u2019est toujours demandé \u2014 qu\u2019est-ce qu\u2019ils ont vraiment créé pour cette série\u00a0? Cet album\u00a0? Cette franchise\u00a0?",
+    landing_p5: "Archiving Merch est la réponse. Une archive créée par des fans, pour des fans qui ont envie de découvrir.",
+    landing_p6: "Un endroit. Chaque pièce. Pour toujours.",
+    landing_cta: "ENTRER DANS L'ARCHIVE \u2192",
+    landing_note: "ACCÈS LIBRE \u2014 CONTRIBUTION SUR INSCRIPTION",
   },
   en: {
     nav_explore: 'EXPLORE',
@@ -2986,6 +3021,15 @@ var LANG = {
     item_added: 'ITEM ADDED!',
     disconnect: 'LOGOUT',
     my_account: 'MY ACCOUNT',
+    landing_slogan: "LET'S ARCHIVE THE WORLD OF MERCH",
+    landing_p1: "It started with a fan archive I built for a record label.",
+    landing_p2: "From there, I discovered different worlds, different collections, each one more fascinating than the last. Their work lived on social media. And social media doesn\u2019t last.",
+    landing_p3: "Posts get deleted. Algorithms change. Accounts vanish overnight. And when that happens, there\u2019s nothing we can do.",
+    landing_p4: "I pitched the idea to people around me. The reaction was always the same. \u201cThis would be incredible. I could spend hours just browsing.\u201d Because we\u2019ve always wondered \u2014 what did they actually make for that show? That album? That franchise?",
+    landing_p5: "Archiving Merch is the answer. An archive built by fans, for fans who want to discover.",
+    landing_p6: "One place. Every piece. Forever.",
+    landing_cta: "ENTER THE ARCHIVE \u2192",
+    landing_note: "FREE ACCESS \u2014 CONTRIBUTE WITH AN ACCOUNT",
   }
 };
 
@@ -2993,6 +3037,20 @@ function toggleLang() {
   currentLang = currentLang === 'fr' ? 'en' : 'fr';
   localStorage.setItem('ma_lang', currentLang);
   applyLang();
+}
+
+function enterArchive() {
+  localStorage.setItem('ma_seen_landing', '1');
+  var ls = document.getElementById('landing-screen');
+  if (ls) { ls.style.opacity='0'; ls.style.transition='opacity .5s'; setTimeout(function(){ ls.style.display='none'; }, 500); }
+}
+
+function showLandingIfNeeded() {
+  var seen = localStorage.getItem('ma_seen_landing');
+  if (!seen) {
+    var ls = document.getElementById('landing-screen');
+    if (ls) ls.style.display = 'block';
+  }
 }
 
 function applyLang() {
@@ -3112,10 +3170,23 @@ function applyLang() {
   if (cgTitle) cgTitle.textContent = L.recent_groups;
   var ciTitle = document.querySelector('#carousel-items-sec div');
   if (ciTitle) ciTitle.textContent = L.recent_items;
+
+  // Landing screen
+  var ll = document.getElementById('landing-lang-btn');
+  if (ll) ll.textContent = currentLang === 'fr' ? 'EN' : 'FR';
+  var ls = document.getElementById('landing-slogan'); if (ls) ls.textContent = L.landing_slogan;
+  var lp1 = document.getElementById('landing-p1'); if (lp1) lp1.textContent = L.landing_p1;
+  var lp2 = document.getElementById('landing-p2'); if (lp2) lp2.textContent = L.landing_p2;
+  var lp3 = document.getElementById('landing-p3'); if (lp3) lp3.textContent = L.landing_p3;
+  var lp4 = document.getElementById('landing-p4'); if (lp4) lp4.textContent = L.landing_p4;
+  var lp5 = document.getElementById('landing-p5'); if (lp5) lp5.textContent = L.landing_p5;
+  var lp6 = document.getElementById('landing-p6'); if (lp6) lp6.textContent = L.landing_p6;
+  var lcta = document.getElementById('landing-cta'); if (lcta) lcta.textContent = L.landing_cta;
+  var lnote = document.getElementById('landing-note'); if (lnote) lnote.textContent = L.landing_note;
 }
 
 // Apply on load
-document.addEventListener('DOMContentLoaded', function(){ applyLang(); });
+document.addEventListener('DOMContentLoaded', function(){ applyLang(); showLandingIfNeeded(); });
 
   // ── RADIO PLAYER ──
 const CHANNELS = [
