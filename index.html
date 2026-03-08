@@ -2330,8 +2330,12 @@ image_focus: document.getElementById('item-focus').value || 'center',
     var forcedGroup = document.getElementById('item-group-id-forced').value;
 var selGroup = document.getElementById('item-group-id') ? document.getElementById('item-group-id').value : '';
 var groupId = forcedGroup || selGroup;
+console.log('[DEBUG] forcedGroup=', forcedGroup, 'selGroup=', selGroup, 'groupId=', groupId, 'item=', r.data&&r.data[0]?r.data[0].id:'NULL');
 if (groupId && r.data && r.data[0]) {
-  await sb.from('item_groups').insert([{item_id: r.data[0].id, group_id: groupId}]);
+  var ig = await sb.from('item_groups').insert([{item_id: r.data[0].id, group_id: groupId}]);
+  console.log('[DEBUG] item_groups insert result:', JSON.stringify(ig));
+} else {
+  console.warn('[DEBUG] item_groups NOT inserted - groupId=', groupId, 'r.data=', r.data);
 }
 document.getElementById('group-select-wrap').style.display = 'none';
 var returnGroup = document.getElementById('add-return-group').value;
