@@ -2679,9 +2679,16 @@ async function browseGroup(groupId) {
     (subGroups.length || currentUser ?
       '<div class="groups-grid">'+
       subGroups.map(function(s){
-        return '<div class="group-card" onclick="browseSubGroup(\''+s.id+'\',\''+groupId+'\')">'+
+        return '<div class="group-card" onclick="browseSubGroup(\''+s.id+'\',\''+groupId+'\')" style="padding:0;overflow:hidden;">'+
+          '<div style="width:100%;aspect-ratio:1/1;overflow:hidden;position:relative;">'+
+          (s.image_url
+            ? '<img src="'+s.image_url+'" style="width:100%;height:100%;object-fit:cover;display:block;opacity:.85;">'
+            : '<div style="width:100%;height:100%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:36px;">'+(U_ICON[s.universe]||'◈')+'</div>')+
+          '</div>'+
+          '<div style="padding:12px 14px;">'+
           '<div class="group-card-name">'+s.name+'</div>'+
           '<div class="group-card-meta">'+(s.description||'')+'</div>'+
+          '</div>'+
           '</div>';
       }).join('')+
       (currentUser ?
