@@ -2739,7 +2739,7 @@ async function browseGroup(groupId) {
     '<div style="margin-top:32px">'+
     '<div class="sec-head" style="align-items:center;"><h2>'+group.name.toUpperCase()+'</h2>'+
 '<div style="display:flex;align-items:center;gap:10px;"><span>'+(linkedItems.length||0)+' ITEMS</span>'+
-(currentUser ? '<button class="btn-edit" onclick="openAddItemInGroup(\''+groupId+'\',\''+group.universe+'\',\''+group.name+'\')">+ AJOUTER UN ITEM</button>' : '')+
+(currentUser && group.universe !== 'musique' ? '<button class="btn-edit" onclick="openAddItemInGroup(\''+groupId+'\',\''+group.universe+'\',\''+group.name+'\')">+ AJOUTER UN ITEM</button>' : '')+
 '</div></div>'+
     (linkedItems.length ?
       '<div class="merch-grid" id="browse-items-grid"></div>' :
