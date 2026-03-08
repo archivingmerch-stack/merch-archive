@@ -2922,6 +2922,7 @@ var LANG = {
     group_created: '✓ GROUPE CRÉÉ !',
     item_added: 'ITEM AJOUTÉ !',
     disconnect: 'SE DÉCONNECTER',
+    my_account: 'MON COMPTE',
   },
   en: {
     nav_explore: 'EXPLORE',
@@ -2984,6 +2985,7 @@ var LANG = {
     group_created: '✓ GROUP CREATED!',
     item_added: 'ITEM ADDED!',
     disconnect: 'LOGOUT',
+    my_account: 'MY ACCOUNT',
   }
 };
 
@@ -3090,8 +3092,26 @@ function applyLang() {
   if (groupDescLbl) groupDescLbl.textContent = L.group_desc_label;
   var groupPhotoLbl = document.querySelector('label[data-i18n="group_photo"]');
   if (groupPhotoLbl) groupPhotoLbl.textContent = L.group_photo_label;
-  var groupSubmitBtn = document.querySelector('button[data-i18n="group_submit"]');
+ var groupSubmitBtn = document.querySelector('button[data-i18n="group_submit"]');
   if (groupSubmitBtn) groupSubmitBtn.textContent = L.group_submit;
+
+  // Account panel
+  var accountTitle = document.getElementById('account-title-text');
+  if (accountTitle) accountTitle.textContent = L.my_account || 'MON COMPTE';
+  var tabContrib = document.getElementById('tab-contributions-text');
+  if (tabContrib) tabContrib.textContent = L.my_contributions;
+  var tabColl = document.getElementById('tab-collection-text');
+  if (tabColl) tabColl.textContent = L.my_collection;
+  var logoutBtnAcc = document.getElementById('logout-btn');
+  if (logoutBtnAcc) logoutBtnAcc.textContent = L.disconnect;
+  var editProfBtn = document.getElementById('edit-profile-btn');
+  if (editProfBtn) editProfBtn.textContent = L.modify_profile;
+
+  // Carousel
+  var cgTitle = document.querySelector('#carousel-groups-sec div');
+  if (cgTitle) cgTitle.textContent = L.recent_groups;
+  var ciTitle = document.querySelector('#carousel-items-sec div');
+  if (ciTitle) ciTitle.textContent = L.recent_items;
 }
 
 // Apply on load
