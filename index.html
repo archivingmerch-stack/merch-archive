@@ -2719,7 +2719,7 @@ async function browseGroup(groupId) {
         if (s.year_start) meta.push(s.year_start + (s.year_end && s.year_end!==s.year_start ? ' — '+s.year_end : ''));
         if (s.description) meta.push(s.description);
         return '<div class="group-card" style="padding:0;overflow:hidden;position:relative;">'+
-          (currentUser ? '<button onclick="event.stopPropagation();openCreateGroup(\''+s.universe+'\',\''+groupId+'\',2,'+JSON.stringify(s).replace(/'/g,"&#39;")+')" style="position:absolute;top:8px;right:8px;z-index:2;background:rgba(15,20,40,.85);border:1px solid var(--border);color:var(--white);font-size:10px;padding:4px 8px;cursor:pointer;font-family:\'DM Mono\',monospace;letter-spacing:1px;">✎</button>' : '')+
+          (currentUser ? '<button data-sgid="'+s.id+'" data-pgid="'+groupId+'" onclick="event.stopPropagation();editSubGroup(this)" style="position:absolute;top:8px;right:8px;z-index:2;background:rgba(15,20,40,.85);border:1px solid var(--border);color:var(--white);font-size:10px;padding:4px 8px;cursor:pointer;font-family:\'DM Mono\',monospace;letter-spacing:1px;">✎</button>' : '')+
           '<div style="width:100%;aspect-ratio:1/1;overflow:hidden;cursor:pointer;" onclick="browseSubGroup(\''+s.id+'\',\''+groupId+'\')">'+
           (s.image_url
             ? '<img src="'+s.image_url+'" style="width:100%;height:100%;object-fit:cover;display:block;opacity:.85;">'
@@ -2907,6 +2907,14 @@ async function deleteGroup(groupId) {
   document.getElementById('add-return-group').value = groupId;
   window.scrollTo(0,0);
     }
+function editSubGroup(btn) {
+  var sgid = btn.getAttribute('data-sgid');
+  var pgid = btn.getAttribute('data-pgid');
+  var s = allGroups.find(function(g){ return g.id === sgid; });
+  if (!s) return;
+  openCreateGroup(s.universe, pgid, 2, s);
+}
+
 async function submitGroup(e) {
   e.preventDefault();
   if (!configured || !currentUser) { showAlert('group-alert','Connexion requise','err'); return; }
@@ -2946,6 +2954,7 @@ async function submitGroup(e) {
 
   var r;
   if (editId) {
+    payload.approved = false; // nécessite validation admin
     r = await sb.from('groups').update(payload).eq('id', editId);
   } else {
     payload.created_by = currentUser.email;
@@ -2957,7 +2966,7 @@ async function submitGroup(e) {
     allGroups = [];
     await loadGroups();
     renderCarouselGroups();
-    showAlert('group-alert', editId ? '✓ MODIFIÉ !' : '✓ GROUPE CRÉÉ !','ok');
+    showAlert('group-alert', editId ? '✓ MODIFICATION SOUMISE — EN ATTENTE DE VALIDATION' : '✓ GROUPE CRÉÉ !','ok');
     setTimeout(function(){
       document.getElementById('create-group-modal').classList.remove('open');
       var parentId = document.getElementById('group-parent-id').value;
