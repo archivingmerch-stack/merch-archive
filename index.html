@@ -1345,6 +1345,35 @@
           <label data-i18n="group_desc">DESCRIPTION</label>
           <textarea id="group-desc" style="min-height:70px;" placeholder="Quelques mots sur ce groupe..."></textarea>
         </div>
+        <!-- Champs sous-groupe uniquement -->
+        <div id="subgroup-fields" style="display:none;">
+          <div class="fgroup" style="margin-bottom:16px">
+            <label style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:6px;">CATÉGORIE</label>
+            <select id="group-category" style="width:100%;background:var(--navy);border:1px solid var(--border);color:var(--white);font-family:'DM Mono',monospace;font-size:11px;padding:10px 12px;letter-spacing:1px;">
+              <option value="">— CHOISIR —</option>
+              <option value="album">ALBUM</option>
+              <option value="ep">EP</option>
+              <option value="single">SINGLE</option>
+              <option value="tournee">TOURNÉE</option>
+              <option value="arc">ARC / SAGA</option>
+              <option value="saison">SAISON</option>
+              <option value="tournoi">TOURNOI</option>
+              <option value="collab">COLLABORATION</option>
+              <option value="collection">COLLECTION</option>
+              <option value="autre">AUTRE</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:12px;margin-bottom:16px;">
+            <div class="fgroup" style="flex:1;margin-bottom:0;">
+              <label style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:6px;">ANNÉE DÉBUT</label>
+              <input type="number" id="group-year-start" placeholder="ex: 2001" min="1900" max="2099" style="width:100%;background:var(--navy);border:1px solid var(--border);color:var(--white);font-family:'DM Mono',monospace;font-size:11px;padding:10px 12px;">
+            </div>
+            <div class="fgroup" style="flex:1;margin-bottom:0;">
+              <label style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:6px;">ANNÉE FIN</label>
+              <input type="number" id="group-year-end" placeholder="ex: 2003" min="1900" max="2099" style="width:100%;background:var(--navy);border:1px solid var(--border);color:var(--white);font-family:'DM Mono',monospace;font-size:11px;padding:10px 12px;">
+            </div>
+          </div>
+        </div>
         <div class="fgroup" style="margin-bottom:20px">
           <label data-i18n="group_photo">PHOTO VITRINE</label>
           <div class="upload-zone" onclick="document.getElementById('group-img-input').click()" id="group-upload-zone">
@@ -2685,15 +2714,20 @@ async function browseGroup(groupId) {
     (subGroups.length || currentUser ?
       '<div class="groups-grid">'+
       subGroups.map(function(s){
-        return '<div class="group-card" onclick="browseSubGroup(\''+s.id+'\',\''+groupId+'\')" style="padding:0;overflow:hidden;">'+
-          '<div style="width:100%;aspect-ratio:1/1;overflow:hidden;position:relative;">'+
+        var meta = [];
+        if (s.category) meta.push(s.category.toUpperCase());
+        if (s.year_start) meta.push(s.year_start + (s.year_end && s.year_end!==s.year_start ? ' — '+s.year_end : ''));
+        if (s.description) meta.push(s.description);
+        return '<div class="group-card" style="padding:0;overflow:hidden;position:relative;">'+
+          (currentUser ? '<button onclick="event.stopPropagation();openCreateGroup(\''+s.universe+'\',\''+groupId+'\',2,'+JSON.stringify(s).replace(/'/g,"&#39;")+')" style="position:absolute;top:8px;right:8px;z-index:2;background:rgba(15,20,40,.85);border:1px solid var(--border);color:var(--white);font-size:10px;padding:4px 8px;cursor:pointer;font-family:\'DM Mono\',monospace;letter-spacing:1px;">✎</button>' : '')+
+          '<div style="width:100%;aspect-ratio:1/1;overflow:hidden;cursor:pointer;" onclick="browseSubGroup(\''+s.id+'\',\''+groupId+'\')">'+
           (s.image_url
             ? '<img src="'+s.image_url+'" style="width:100%;height:100%;object-fit:cover;display:block;opacity:.85;">'
             : '<div style="width:100%;height:100%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:36px;">'+(U_ICON[s.universe]||'◈')+'</div>')+
           '</div>'+
-          '<div style="padding:12px 14px;">'+
+          '<div style="padding:12px 14px;cursor:pointer;" onclick="browseSubGroup(\''+s.id+'\',\''+groupId+'\')">'+
           '<div class="group-card-name">'+s.name+'</div>'+
-          '<div class="group-card-meta">'+(s.description||'')+'</div>'+
+          '<div class="group-card-meta">'+meta.join(' · ')+'</div>'+
           '</div>'+
           '</div>';
       }).join('')+
@@ -2788,20 +2822,36 @@ function previewGroupImg(input) {
   }
 }
 
-function openCreateGroup(universe, parentId, level) {
+function openCreateGroup(universe, parentId, level, existingGroup) {
   if (!currentUser) { showSection('auth'); return; }
   document.getElementById('group-parent-id').value = parentId || '';
   document.getElementById('group-universe').value = universe;
   document.getElementById('group-level').value = level || 1;
   var L = LANG[currentLang];
   var title = level===2 ? L.create_subgroup : L.create_group_title;
+  // Mode édition
+  var editId = existingGroup ? existingGroup.id : '';
+  if (!document.getElementById('group-edit-id')) {
+    var hi = document.createElement('input'); hi.type='hidden'; hi.id='group-edit-id';
+    document.getElementById('create-group-form').prepend(hi);
+  }
+  document.getElementById('group-edit-id').value = editId;
+  if (existingGroup) title = level===2 ? 'MODIFIER LE SOUS-GROUPE' : 'MODIFIER LE GROUPE';
   document.getElementById('create-group-title').textContent = title;
-  document.getElementById('group-name').value = '';
-  document.getElementById('group-desc').value = '';
+  document.getElementById('group-name').value = existingGroup ? existingGroup.name : '';
+  document.getElementById('group-desc').value = existingGroup ? (existingGroup.description||'') : '';
   document.getElementById('group-img-input').value = '';
   document.getElementById('group-img-preview').style.display = 'none';
   document.getElementById('group-upload-lbl').textContent = '↑ CLIQUER POUR UPLOADER';
   document.getElementById('group-alert').className = 'alert';
+  // Champs sous-groupe
+  var sf = document.getElementById('subgroup-fields');
+  if (sf) sf.style.display = level===2 ? 'block' : 'none';
+  if (level===2) {
+    document.getElementById('group-category').value = existingGroup ? (existingGroup.category||'') : '';
+    document.getElementById('group-year-start').value = existingGroup ? (existingGroup.year_start||'') : '';
+    document.getElementById('group-year-end').value = existingGroup ? (existingGroup.year_end||'') : '';
+  }
   document.getElementById('create-group-modal').classList.add('open');
 }
 
@@ -2876,29 +2926,43 @@ async function submitGroup(e) {
     }
   }
 
+  var level = parseInt(document.getElementById('group-level').value) || 1;
+  var editId = document.getElementById('group-edit-id') ? document.getElementById('group-edit-id').value : '';
+
   var payload = {
     name: document.getElementById('group-name').value,
     description: document.getElementById('group-desc').value,
     universe: document.getElementById('group-universe').value,
     parent_id: document.getElementById('group-parent-id').value || null,
-    level: parseInt(document.getElementById('group-level').value) || 1,
-    image_url: image_url,
-    created_by: currentUser.email,
+    level: level,
     approved: true
   };
+  if (image_url) payload.image_url = image_url;
+  if (level === 2) {
+    payload.category = document.getElementById('group-category').value || null;
+    payload.year_start = document.getElementById('group-year-start').value ? parseInt(document.getElementById('group-year-start').value) : null;
+    payload.year_end = document.getElementById('group-year-end').value ? parseInt(document.getElementById('group-year-end').value) : null;
+  }
 
-  var r = await sb.from('groups').insert([payload]);
+  var r;
+  if (editId) {
+    r = await sb.from('groups').update(payload).eq('id', editId);
+  } else {
+    payload.created_by = currentUser.email;
+    r = await sb.from('groups').insert([payload]);
+  }
   btn.textContent = LANG[currentLang].group_submit; btn.disabled = false;
   if (r.error) { showAlert('group-alert','ERREUR: '+r.error.message,'err'); }
   else {
     allGroups = [];
     await loadGroups();
     renderCarouselGroups();
-    showAlert('group-alert','✓ GROUPE CRÉÉ !','ok');
+    showAlert('group-alert', editId ? '✓ MODIFIÉ !' : '✓ GROUPE CRÉÉ !','ok');
     setTimeout(function(){
       document.getElementById('create-group-modal').classList.remove('open');
-      var btn2 = document.querySelector('.upill.active');
-      if (btn2 && activeU) setU(btn2, activeU);
+      var parentId = document.getElementById('group-parent-id').value;
+      if (parentId) { showSection('browse'); browseGroup(parentId); }
+      else { var btn2 = document.querySelector('.upill.active'); if (btn2 && activeU) setU(btn2, activeU); }
     }, 1200);
   }
 }
