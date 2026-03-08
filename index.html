@@ -1597,16 +1597,20 @@ var TEE_BRANDS_DEFAULT = [
   'Liquid Blue','Oneita Power-T','Screen Stars Value Weight',
   'Sof Tee by Tee Jays','Spring Ford','TULTEX','Wild Oats','Winterland'
 ];
-var teeBrandsList = []; // loaded from DB (approved only)
+var teeBrandsList = TEE_BRANDS_DEFAULT.slice(); // dispo immédiatement, avant même le chargement DB
 
 async function loadTeeBrands() {
-  if (!configured) { teeBrandsList = TEE_BRANDS_DEFAULT.slice(); return; }
+  if (!configured) return;
   var r = await sb.from('tee_brands').select('name').eq('approved', true).order('name');
-  if (r.data && r.data.length) {
-    teeBrandsList = r.data.map(function(b){ return b.name; });
-  } else {
-    teeBrandsList = TEE_BRANDS_DEFAULT.slice();
-  }
+  var fromDb = (r.data && r.data.length) ? r.data.map(function(b){ return b.name; }) : [];
+  var merged = TEE_BRANDS_DEFAULT.slice();
+  fromDb.forEach(function(name){
+    if (!merged.find(function(d){ return d.toLowerCase() === name.toLowerCase(); })) {
+      merged.push(name);
+    }
+  });
+  merged.sort(function(a,b){ return a.localeCompare(b); });
+  teeBrandsList = merged;
 }
 
 function teeBrandInput(ctx) {
@@ -2877,13 +2881,14 @@ async function browseGroup(groupId) {
   var subGroups = allGroups.filter(function(g){ return g.parent_id===groupId; });
   var uLabel = U_LABEL[group.universe] || group.universe.toUpperCase();
 
-  // Charger les items liés à ce groupe
+  // Charger les items liés à ce groupe (depuis DB, pas allItems)
   var linkedItems = [];
   if (configured) {
     var r = await sb.from('item_groups').select('item_id').eq('group_id', groupId);
     if (r.data && r.data.length) {
       var ids = r.data.map(function(x){ return x.item_id; });
-      linkedItems = allItems.filter(function(i){ return ids.includes(i.id); });
+      var ri = await sb.from('merch_items').select('*').in('id', ids);
+      linkedItems = ri.data || [];
     }
   }
 
@@ -2945,7 +2950,9 @@ async function browseSubGroup(subGroupId, parentGroupId) {
     var r = await sb.from('item_groups').select('item_id').eq('group_id', subGroupId);
     if (r.data && r.data.length) {
       var ids = r.data.map(function(x){ return x.item_id; });
-      linkedItems = allItems.filter(function(i){ return ids.includes(i.id); });
+      // Recharger depuis la DB pour avoir les items fraîchement ajoutés
+      var ri = await sb.from('merch_items').select('*').in('id', ids);
+      linkedItems = ri.data || [];
     }
   }
 
