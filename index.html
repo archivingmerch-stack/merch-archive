@@ -1893,7 +1893,13 @@ function setU(btn,u){
     grid.parentNode.insertBefore(groupsBand, grid);
   }
   var cw = document.getElementById('carousel-wrap');
-if (cw) cw.style.display = u ? 'none' : 'block';
+  if (cw) cw.style.display = u ? 'none' : 'block';
+  var filterType = document.getElementById('filter-type');
+  var filterStatus = document.getElementById('filter-status');
+  var sortBy = document.getElementById('sort-by');
+  if (filterType) filterType.style.display = u ? 'none' : '';
+  if (filterStatus) filterStatus.style.display = u ? 'none' : '';
+  if (sortBy) sortBy.style.display = u ? 'none' : '';
   if (u) {
     var groups = allGroups.filter(function(g){ return g.universe===u && g.level===1; });
     if (groups.length) {
@@ -2734,8 +2740,10 @@ async function browseSubGroup(subGroupId, parentGroupId) {
     '<div class="browse-breadcrumb"><span>'+uLabel+'</span> / <span>'+(parent?parent.name:'')+'</span> / <span>'+subGroup.name+'</span></div>'+
     '</div>'+
     '<div style="margin-top:8px">'+
-    '<div class="sec-head"><h2>'+subGroup.name.toUpperCase()+'</h2>'+
-    '<span>'+(linkedItems.length||0)+' ITEMS</span></div>'+
+    '<div class="sec-head" style="align-items:center;"><h2>'+subGroup.name.toUpperCase()+'</h2>'+
+    '<div style="display:flex;align-items:center;gap:10px;"><span>'+(linkedItems.length||0)+' ITEMS</span>'+
+    (currentUser ? '<button class="btn-edit" onclick="openAddItemInGroup(\''+subGroupId+'\',\''+subGroup.universe+'\',\''+subGroup.name+'\')">+ AJOUTER UN ITEM</button>' : '')+
+    '</div></div>'+
     (linkedItems.length ?
       '<div class="merch-grid" id="browse-items-grid"></div>' :
       '<div class="empty-state" style="padding:60px 20px;text-align:center;"><p>AUCUN ITEM DANS CET ARC/ALBUM</p></div>')+
