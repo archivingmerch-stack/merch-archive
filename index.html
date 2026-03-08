@@ -2597,6 +2597,7 @@ async function browseUniverse(universe) {
   browseState = { universe: universe, parentGroup: null };
   await loadGroups();
   var groups = allGroups.filter(function(g){ return g.universe===universe && g.level===1; });
+  groups.sort(function(a,b){ return a.name.localeCompare(b.name); });
   var uLabel = U_LABEL[universe] || universe.toUpperCase();
   var uIcon  = U_ICON[universe] || '◈';
   var items  = allItems.filter(function(i){ return i.universe===universe; });
@@ -2611,13 +2612,17 @@ async function browseUniverse(universe) {
     '<div class="groups-grid">'+
     groups.map(function(g){
       var subCount = allGroups.filter(function(s){ return s.parent_id===g.id; }).length;
-      var imgStyle = g.image_url ? 'style="background-image:url('+g.image_url+');background-size:cover;background-position:center;min-height:140px"' : '';
-      return '<div class="group-card" onclick="browseGroup(\''+g.id+'\')" '+imgStyle+'>'+
-        (g.image_url?'<div style="position:absolute;inset:0;background:rgba(4,6,15,.55)"></div><div style="position:relative">':'') +
+      return '<div class="group-card" onclick="browseGroup(\''+g.id+'\')" style="padding:0;overflow:hidden;">'+
+        '<div style="width:100%;aspect-ratio:1/1;overflow:hidden;position:relative;">'+
+        (g.image_url
+          ? '<img src="'+g.image_url+'" style="width:100%;height:100%;object-fit:cover;display:block;opacity:.85;">'
+          : '<div style="width:100%;height:100%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:36px;">'+( U_ICON[g.universe]||'◈')+'</div>')+
+        '</div>'+
+        '<div style="padding:12px 14px;">'+
         '<div class="group-card-name">'+g.name+'</div>'+
         '<div class="group-card-meta">'+(g.description||'')+
         (subCount?' · '+subCount+' '+L.subgroups:'')+'</div>'+
-        (g.image_url?'</div>':'')+
+        '</div>'+
         '</div>';
     }).join('')+
     // Carte "créer un groupe" — visible si connecté
