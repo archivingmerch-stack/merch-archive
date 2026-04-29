@@ -4050,7 +4050,7 @@ const CHANNELS = [
   { name: 'LOFI ARCHIVE',    sub: 'Chill beats · Ambient',  ytId: 'jfKfPfyJRdk' },
   { name: 'ROCK RADIO', sub: 'Rock · Classic · Live', ytId: 'Nt27aBceerI' },
 ];
-let radioPlaying = false, currentChannel = 0, channelOpen = false, ytPlayer = null, ytApiReady = false;
+let radioPlaying = false, currentChannel = 0, ytPlayer = null, ytApiReady = false;
 
 function initYT() {
   if (document.getElementById('yt-api-script')) return;
@@ -4079,38 +4079,53 @@ function loadChannel(idx) {
     }
   });
 }
-function toggleRadio() {
-  if (!channelOpen && !radioPlaying) { openChannelPicker(); return; }
-  if (channelOpen) { closeChannelPicker(); return; }
-  radioPlaying = !radioPlaying;
-  updatePlayerUI();
-  if (radioPlaying) { initYT(); if (ytApiReady) loadChannel(currentChannel); }
-  else { if (ytPlayer) { try { ytPlayer.stopVideo(); } catch(e){} } }
-}
-function openChannelPicker() {
-  channelOpen = true;
-  document.getElementById('radio-channels').classList.add('open');
-  document.getElementById('radio-caret').textContent = '▼';
-}
-function closeChannelPicker() {
-  channelOpen = false;
-  document.getElementById('radio-channels').classList.remove('open');
-  document.getElementById('radio-caret').textContent = '▲';
+function updatePlayerUI() {
+  const ch = CHANNELS[currentChannel];
+  // Bouton flottant
+  const nameEl0 = document.getElementById('radio-ch-name');
+  const subEl0  = document.getElementById('radio-ch-sub');
+  const btn0    = document.getElementById('radio-btn');
+  if (nameEl0) nameEl0.textContent = radioPlaying ? ch.name : 'RADIO';
+  if (subEl0)  subEl0.textContent  = radioPlaying ? ch.sub  : 'SELECT A CHANNEL';
+  if (btn0)    btn0.classList.toggle('playing', radioPlaying);
+  // Dialog XP
+  const icon   = document.getElementById('xp-radio-icon');
+  const nameEl = document.getElementById('xp-radio-name');
+  const subEl  = document.getElementById('xp-radio-sub');
+  const btn    = document.getElementById('xp-play-pause-btn');
+  const dot    = document.getElementById('xp-taskbar-radio-dot');
+  const label  = document.getElementById('xp-taskbar-radio-label');
+  if (icon)   icon.classList.toggle('playing', radioPlaying);
+  if (nameEl) { nameEl.textContent = radioPlaying ? ch.name : 'RADIO'; nameEl.classList.toggle('playing', radioPlaying); }
+  if (subEl)  subEl.textContent = radioPlaying ? ch.sub : 'SELECT A CHANNEL BELOW';
+  if (btn)    btn.textContent   = radioPlaying ? '⏹ STOP' : '▶ PLAY';
+  if (dot)    dot.classList.toggle('playing', radioPlaying);
+  if (label)  label.textContent = radioPlaying ? ch.name.split(' ')[0] : 'RADIO';
+  // Channels actifs dans les deux listes
+  document.querySelectorAll('.radio-ch').forEach((el, i) => el.classList.toggle('active', i === currentChannel));
+  document.querySelectorAll('.xp-channel').forEach((el, i) => el.classList.toggle('active', i === currentChannel));
 }
 function selectChannel(idx) {
   currentChannel = idx;
-  document.querySelectorAll('.radio-ch').forEach((el, i) => el.classList.toggle('active', i === idx));
-  closeChannelPicker();
   radioPlaying = true;
   updatePlayerUI();
   initYT();
   if (ytApiReady) loadChannel(idx);
 }
-function updatePlayerUI() {
-  const ch = CHANNELS[currentChannel];
-  document.getElementById('radio-ch-name').textContent = radioPlaying ? ch.name : 'RADIO';
-  document.getElementById('radio-ch-sub').textContent = radioPlaying ? ch.sub : 'SELECT A CHANNEL';
-  document.getElementById('radio-btn').classList.toggle('playing', radioPlaying);
+function xpSelectChannel(idx) { selectChannel(idx); }
+function xpStopRadio() {
+  radioPlaying = false;
+  if (ytPlayer) { try { ytPlayer.stopVideo(); } catch(e){} }
+  updatePlayerUI();
+}
+function xpTogglePlay() {
+  if (radioPlaying) { xpStopRadio(); }
+  else { radioPlaying = true; updatePlayerUI(); initYT(); if (ytApiReady) loadChannel(currentChannel); }
+}
+function toggleXpRadioDialog() {
+  var d = document.getElementById('xp-radio-dialog');
+  if (!d) return;
+  d.style.display = (d.style.display === 'none' || d.style.display === '') ? 'block' : 'none';
 }
 </script>
 
@@ -4275,91 +4290,6 @@ setInterval(xpUpdateClock, 10000);
     if (drag) { drag.style.cursor = ''; drag = null; }
   });
 })();
-
-// ── XP RADIO DIALOG ──
-function toggleXpRadioDialog() {
-  var d = document.getElementById('xp-radio-dialog');
-  if (!d) return;
-  d.style.display = d.style.display === 'none' || d.style.display === '' ? 'block' : 'none';
-}
-
-function xpSelectChannel(idx) {
-  currentChannel = idx;
-  // Mettre à jour l'UI des channels
-  document.querySelectorAll('.xp-channel').forEach(function(el, i) {
-    el.classList.toggle('active', i === idx);
-  });
-  // Démarrer la lecture
-  radioPlaying = true;
-  xpUpdateRadioUI();
-  initYT();
-  if (ytApiReady) loadChannel(idx);
-}
-
-function xpStopRadio() {
-  radioPlaying = false;
-  if (ytPlayer) { try { ytPlayer.stopVideo(); } catch(e){} }
-  xpUpdateRadioUI();
-}
-
-function xpTogglePlay() {
-  if (radioPlaying) {
-    xpStopRadio();
-  } else {
-    radioPlaying = true;
-    xpUpdateRadioUI();
-    initYT();
-    if (ytApiReady) loadChannel(currentChannel);
-  }
-}
-
-function xpUpdateRadioUI() {
-  var ch = CHANNELS[currentChannel];
-  var icon = document.getElementById('xp-radio-icon');
-  var nameEl = document.getElementById('xp-radio-name');
-  var subEl = document.getElementById('xp-radio-sub');
-  var btn = document.getElementById('xp-play-pause-btn');
-  var dot = document.getElementById('xp-taskbar-radio-dot');
-  var label = document.getElementById('xp-taskbar-radio-label');
-
-  if (icon) icon.classList.toggle('playing', radioPlaying);
-  if (nameEl) { nameEl.textContent = radioPlaying ? ch.name : 'RADIO'; nameEl.classList.toggle('playing', radioPlaying); }
-  if (subEl) subEl.textContent = radioPlaying ? ch.sub : 'SELECT A CHANNEL BELOW';
-  if (btn) btn.textContent = radioPlaying ? '⏹ STOP' : '▶ PLAY';
-  if (dot) dot.classList.toggle('playing', radioPlaying);
-  if (label) label.textContent = radioPlaying ? ch.name.split(' ')[0] : 'RADIO';
-
-  // Compat avec l'ancien updatePlayerUI si appelé depuis l'ancien code
-  updatePlayerUI();
-}
-
-// Patch de updatePlayerUI pour aussi mettre à jour la XP UI
-var _origUpdatePlayerUI = typeof updatePlayerUI === 'function' ? updatePlayerUI : null;
-function updatePlayerUI() {
-  // Ancien comportement
-  var ch = CHANNELS[currentChannel];
-  var nameEl0 = document.getElementById('radio-ch-name');
-  var subEl0 = document.getElementById('radio-ch-sub');
-  var btn0 = document.getElementById('radio-btn');
-  if (nameEl0) nameEl0.textContent = radioPlaying ? ch.name : 'RADIO';
-  if (subEl0) subEl0.textContent = radioPlaying ? ch.sub : 'SELECT A CHANNEL';
-  if (btn0) btn0.classList.toggle('playing', radioPlaying);
-  // XP UI
-  xpUpdateRadioUI();
-}
-
-// Patch de selectChannel pour aussi updater le XP
-var _origSelectChannel = typeof selectChannel === 'function' ? selectChannel : null;
-function selectChannel(idx) {
-  currentChannel = idx;
-  document.querySelectorAll('.radio-ch').forEach(function(el, i){ el.classList.toggle('active', i===idx); });
-  document.querySelectorAll('.xp-channel').forEach(function(el, i){ el.classList.toggle('active', i===idx); });
-  if (typeof closeChannelPicker === 'function') closeChannelPicker();
-  radioPlaying = true;
-  updatePlayerUI();
-  initYT();
-  if (ytApiReady) loadChannel(idx);
-}
 
 // Mise à jour taskbar auth label quand user se connecte
 var _origSetUser = typeof setUser === 'function' ? setUser : null;
