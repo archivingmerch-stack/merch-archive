@@ -1,15 +1,33 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="xp">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MERCH.ARCHIVE</title>
+  <script>
+    /* Anti-FOUC : applique le thème sauvegardé avant le rendu */
+    (function(){
+      try {
+        var t = localStorage.getItem('archive_theme');
+        if (t === 'obsidian' || t === 'xp') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      } catch(e) {}
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&family=VT323&family=Courier+Prime:wght@400;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root {
-      /* ── BEIGE XP THEME ── */
+    /* ═══════════════════════════════════════════════════
+       DUAL THEME SYSTEM
+       - XP Luna (default) — Windows XP authentique
+       - Obsidian — Modern dark
+       Variables historiques préservées pour compat ascendante.
+       ═══════════════════════════════════════════════════ */
+    :root,
+    :root[data-theme="xp"] {
+      /* ── XP LUNA (corps actuel, refonte Tahoma à venir étape 1.1.c) ── */
       --ink:     #f0ede8;
       --deep:    #e8e4de;
       --navy:    #dedad4;
@@ -22,12 +40,10 @@
       --white:   #1a1614;
       --off:     #2a2420;
 
-      /* Accent bleu XP */
       --blue:    #2563ff;
       --blue2:   #0040cc;
       --glow:    rgba(37,99,255,.12);
 
-      /* XP extras */
       --xp-bg:        #f0ede8;
       --xp-bg2:       #e8e4de;
       --xp-text:      #1a1a1a;
@@ -36,6 +52,81 @@
       --xp-shadow:    rgba(0,0,0,0.15);
       --xp-folder:    #f5c518;
       --xp-folder-sh: #c9a200;
+
+      /* Tokens sémantiques dual-theme (utilisés par les nouveaux composants) */
+      --bg:           #f0ede8;
+      --surface:      #ffffff;
+      --surface-alt:  #f8f5f0;
+      --text:         #1a1a1a;
+      --text-muted:   #6a6660;
+      --border-soft:  #c8c4bc;
+      --border-hard:  #a8a49c;
+      --accent:       #2563ff;
+      --accent-2:     #0040cc;
+      --accent-fg:    #ffffff;
+      --accent-glow:  rgba(37,99,255,.12);
+      --titlebar-grad:linear-gradient(180deg, #4a90e8 0%, #1c5fd4 35%, #1550c0 65%, #1044aa 100%);
+      --shadow-card:  2px 2px 0 rgba(0,0,0,0.08);
+      --shadow-elev:  4px 4px 0 rgba(0,0,0,0.30);
+
+      --font-body:  'Space Mono', monospace;
+      --font-head:  'VT323', monospace;
+      --font-mono:  'DM Mono', monospace;
+
+      --radius-sm:  2px;
+      --radius-md:  3px;
+      --radius-lg:  8px;
+    }
+
+    :root[data-theme="obsidian"] {
+      /* ── OBSIDIAN — Modern Dark ── */
+      --ink:     #14171C;
+      --deep:    #1B1F26;
+      --navy:    #14171C;
+      --panel:   #14171C;
+      --card:    #1B1F26;
+      --border:  #23272F;
+      --mid:     #2F343D;
+      --muted:   #9CA3AF;
+      --soft:    #D1D5DB;
+      --white:   #F5F5F5;
+      --off:     #E5E7EB;
+
+      --blue:    #7C5CFF;
+      --blue2:   #9B85FF;
+      --glow:    rgba(124,92,255,.16);
+
+      --xp-bg:        #0B0D10;
+      --xp-bg2:       #14171C;
+      --xp-text:      #F5F5F5;
+      --xp-text-muted:#9CA3AF;
+      --xp-border:    #23272F;
+      --xp-shadow:    rgba(0,0,0,0.45);
+      --xp-folder:    #FFB800;
+      --xp-folder-sh: #C99000;
+
+      --bg:           #0B0D10;
+      --surface:      #14171C;
+      --surface-alt:  #1B1F26;
+      --text:         #F5F5F5;
+      --text-muted:   #9CA3AF;
+      --border-soft:  #23272F;
+      --border-hard:  #2F343D;
+      --accent:       #7C5CFF;
+      --accent-2:     #9B85FF;
+      --accent-fg:    #FFFFFF;
+      --accent-glow:  rgba(124,92,255,.16);
+      --titlebar-grad:linear-gradient(180deg, #1B1F26 0%, #14171C 100%);
+      --shadow-card:  0 1px 0 rgba(255,255,255,.04) inset, 0 4px 12px rgba(0,0,0,.35);
+      --shadow-elev:  0 1px 0 rgba(255,255,255,.04) inset, 0 12px 32px rgba(0,0,0,.55);
+
+      --font-body:  'Inter', -apple-system, 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+      --font-head:  'Inter', -apple-system, 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+      --font-mono:  'JetBrains Mono', 'Fira Code', 'Space Mono', monospace;
+
+      --radius-sm:  6px;
+      --radius-md:  10px;
+      --radius-lg:  14px;
     }
 
     * { margin:0; padding:0; box-sizing:border-box; }
@@ -1291,6 +1382,7 @@
   </span>
   <span id="nav-login-text">CONNEXION</span>
 </button>
+      <button class="nav-btn" id="theme-btn" onclick="toggleTheme()" title="Changer de thème" style="border-color:var(--mid);color:var(--muted);font-size:9px;letter-spacing:3px;padding:7px 10px;">◐ XP</button>
       <button class="nav-btn" id="lang-btn" onclick="toggleLang()" style="border-color:var(--mid);color:var(--muted);font-size:9px;letter-spacing:3px;padding:7px 10px;">FR</button>
     </div>
   </div>
@@ -3893,6 +3985,30 @@ function toggleLang() {
   localStorage.setItem('ma_lang', currentLang);
   applyLang();
 }
+
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  try { localStorage.setItem('archive_theme', t); } catch(e) {}
+  var btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = t === 'obsidian' ? '◑ DARK' : '◐ XP';
+}
+
+function toggleTheme() {
+  var current = document.documentElement.getAttribute('data-theme') || 'xp';
+  applyTheme(current === 'xp' ? 'obsidian' : 'xp');
+}
+
+(function initThemeBtn(){
+  /* sync le label du bouton après que le DOM soit prêt */
+  function sync(){
+    var t = document.documentElement.getAttribute('data-theme') || 'xp';
+    var btn = document.getElementById('theme-btn');
+    if (btn) btn.textContent = t === 'obsidian' ? '◑ DARK' : '◐ XP';
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', sync);
+  } else { sync(); }
+})();
 
 function enterArchive() {
   localStorage.setItem('ma_seen_landing', '1');
